@@ -58,6 +58,7 @@ let package = Package(
             ],
             path: "Tests"
         )
-    ]
+    ],
+    cxxLanguageStandard: .cxx17
 )
 
