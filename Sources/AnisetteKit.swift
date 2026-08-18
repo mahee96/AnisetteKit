@@ -115,63 +115,22 @@ public class LocalAnisetteProvider {
 #if !os(macOS)
         return try await getHeadersUC(identifier: identifier, storage: storage)
 #else
-        var generatedAdiPb: Data? = nil
-        let adiPbData: Data
-
-        let uuidProvDir = provisioningDir.appendingPathComponent(identifier.uuidString.lowercased())
-        let adiPbURL = uuidProvDir.appendingPathComponent(LocalAnisetteProvider.adiPbFileName)
-
-        defer {
-            if case .memory = storage {
-                try? FileManager.default.removeItem(at: adiPbURL)
-                try? FileManager.default.removeItem(at: uuidProvDir)
-            }
+        let (adiPbData, generatedBlob, cleanup) = try await resolveProvisioningBlob(
+            identifier: identifier,
+            storage: storage
+        ) {
+            try await self.runProvisioningFlow(identifier: identifier)
         }
-
-        switch storage {
-        case .disk:
-            if !FileManager.default.fileExists(atPath: adiPbURL.path) {
-                verboseLog("[AnisetteKit] Native adi.pb missing. Starting automatic local provisioning...")
-                let newBlob = try await runProvisioningFlow(identifier: identifier)
-                try FileManager.default.createDirectory(at: uuidProvDir, withIntermediateDirectories: true, attributes: nil)
-                try newBlob.write(to: adiPbURL)
-                verboseLog("[AnisetteKit] Provisioning successful! Saved adi.pb locally.")
-                generatedAdiPb = newBlob
-                adiPbData = newBlob
-            } else {
-                adiPbData = try Data(contentsOf: adiPbURL)
-            }
-
-        case .memory(let existing):
-            if let provided = existing, !provided.isEmpty {
-                adiPbData = provided
-            } else {
-                verboseLog("[AnisetteKit] Native adi.pb missing in-memory. Starting automatic local provisioning in-memory...")
-                let newBlob = try await runProvisioningFlow(identifier: identifier)
-                generatedAdiPb = newBlob
-                adiPbData = newBlob
-            }
-        }
-
-        let identifierBytes = identifier.uuidBytes
+        defer { cleanup() }
 
         let headers = try callGetAnisetteHeaders(
             libDir: libDir.path,
             provisioningDir: provisioningDir.path,
-            identifier: identifierBytes,
+            identifier: identifier.uuidBytes,
             adiPb: [UInt8](adiPbData)
         )
 
-        var result = [String: String]()
-        result["X-Apple-I-MD"]       = headers["X-Apple-I-MD"] ?? ""
-        result["X-Apple-I-MD-M"]     = headers["X-Apple-I-MD-M"] ?? ""
-        result["X-Apple-I-MD-RINFO"] = headers["X-Apple-I-MD-RINFO"] ?? LocalAnisetteProvider.defaultRoutingInfo
-        result["X-Mme-Device-Id"]    = identifier.uuidString.uppercased()
-
-        let sha256 = CommonSHA256(data: Data(identifierBytes))
-        result["X-Apple-I-MD-LU"] = sha256.map { String(format: "%02hhX", $0) }.joined()
-
-        return (result, generatedAdiPb)
+        return (formatAnisetteHeaders(rawHeaders: headers, identifier: identifier), generatedBlob)
 #endif
     }
 
@@ -183,13 +142,33 @@ public class LocalAnisetteProvider {
         identifier: UUID,
         storage: ProvisioningStorage = .disk
     ) async throws -> (headers: [String: String], newBlob: Data?) {
-        var generatedAdiPb: Data? = nil
-        let adiPbData: Data
+        let (adiPbData, generatedBlob, cleanup) = try await resolveProvisioningBlob(
+            identifier: identifier,
+            storage: storage
+        ) {
+            try await self.runProvisioningFlowUC(identifier: identifier)
+        }
+        defer { cleanup() }
 
+        let headers = try callGetAnisetteHeadersUC(
+            libDir: libDir.path,
+            provisioningDir: provisioningDir.path,
+            identifier: identifier.uuidBytes,
+            adiPb: [UInt8](adiPbData)
+        )
+
+        return (formatAnisetteHeaders(rawHeaders: headers, identifier: identifier), generatedBlob)
+    }
+
+    private func resolveProvisioningBlob(
+        identifier: UUID,
+        storage: ProvisioningStorage,
+        provisioner: () async throws -> Data
+    ) async throws -> (data: Data, generated: Data?, cleanup: () -> Void) {
         let uuidProvDir = provisioningDir.appendingPathComponent(identifier.uuidString.lowercased())
         let adiPbURL = uuidProvDir.appendingPathComponent(LocalAnisetteProvider.adiPbFileName)
 
-        defer {
+        let cleanup: () -> Void = {
             if case .memory = storage {
                 try? FileManager.default.removeItem(at: adiPbURL)
                 try? FileManager.default.removeItem(at: uuidProvDir)
@@ -199,47 +178,38 @@ public class LocalAnisetteProvider {
         switch storage {
         case .disk:
             if !FileManager.default.fileExists(atPath: adiPbURL.path) {
-                verboseLog("[AnisetteKit] Emulated adi.pb missing. Starting automatic local provisioning...")
-                let newBlob = try await runProvisioningFlowUC(identifier: identifier)
+                verboseLog("[AnisetteKit] Native adi.pb missing. Starting automatic local provisioning...")
+                let newBlob = try await provisioner()
                 try FileManager.default.createDirectory(at: uuidProvDir, withIntermediateDirectories: true, attributes: nil)
                 try newBlob.write(to: adiPbURL)
-                verboseLog("[AnisetteKit] Emulated provisioning successful! Saved adi.pb locally.")
-                generatedAdiPb = newBlob
-                adiPbData = newBlob
+                verboseLog("[AnisetteKit] Provisioning successful! Saved adi.pb locally.")
+                return (newBlob, newBlob, cleanup)
             } else {
-                adiPbData = try Data(contentsOf: adiPbURL)
+                let data = try Data(contentsOf: adiPbURL)
+                return (data, nil, cleanup)
             }
 
         case .memory(let existing):
             if let provided = existing, !provided.isEmpty {
-                adiPbData = provided
+                return (provided, nil, cleanup)
             } else {
-                verboseLog("[AnisetteKit] Emulated adi.pb missing in-memory. Starting automatic local provisioning in-memory...")
-                let newBlob = try await runProvisioningFlowUC(identifier: identifier)
-                generatedAdiPb = newBlob
-                adiPbData = newBlob
+                verboseLog("[AnisetteKit] Native adi.pb missing in-memory. Starting automatic local provisioning in-memory...")
+                let newBlob = try await provisioner()
+                return (newBlob, newBlob, cleanup)
             }
         }
+    }
 
-        let identifierBytes = identifier.uuidBytes
-
-        let headers = try callGetAnisetteHeadersUC(
-            libDir: libDir.path,
-            provisioningDir: provisioningDir.path,
-            identifier: identifierBytes,
-            adiPb: [UInt8](adiPbData)
-        )
-
+    private func formatAnisetteHeaders(rawHeaders: [String: String], identifier: UUID) -> [String: String] {
         var result = [String: String]()
-        result["X-Apple-I-MD"]       = headers["X-Apple-I-MD"] ?? ""
-        result["X-Apple-I-MD-M"]     = headers["X-Apple-I-MD-M"] ?? ""
-        result["X-Apple-I-MD-RINFO"] = headers["X-Apple-I-MD-RINFO"] ?? LocalAnisetteProvider.defaultRoutingInfo
+        result["X-Apple-I-MD"]       = rawHeaders["X-Apple-I-MD"] ?? ""
+        result["X-Apple-I-MD-M"]     = rawHeaders["X-Apple-I-MD-M"] ?? ""
+        result["X-Apple-I-MD-RINFO"] = rawHeaders["X-Apple-I-MD-RINFO"] ?? LocalAnisetteProvider.defaultRoutingInfo
         result["X-Mme-Device-Id"]    = identifier.uuidString.uppercased()
 
-        let sha256 = CommonSHA256(data: Data(identifierBytes))
+        let sha256 = CommonSHA256(data: Data(identifier.uuidBytes))
         result["X-Apple-I-MD-LU"] = sha256.map { String(format: "%02hhX", $0) }.joined()
-
-        return (result, generatedAdiPb)
+        return result
     }
 
     func callGetAnisetteHeadersUC(libDir: String, provisioningDir: String, identifier: [UInt8], adiPb: [UInt8]) throws -> [String: String] {
