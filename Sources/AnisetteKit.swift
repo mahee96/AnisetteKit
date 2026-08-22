@@ -216,7 +216,7 @@ public class LocalAnisetteProvider {
 
         var outPtr: UnsafeMutablePointer<CChar>? = nil
         let res = get_anisette_headers_uc(libDir, provisioningDir, identifier, adiPb, UInt32(adiPb.count), &outPtr)
-        defer { if let p = outPtr { free_rust_string(p) } }
+        defer { if let p = outPtr { free_c_string(p) } }
 
         guard let ptr = outPtr else {
             throw NSError(domain: "AnisetteKit", code: Int(res), userInfo: [NSLocalizedDescriptionKey: "Unicorn loader returned nil (code: \(res))"])
@@ -231,7 +231,7 @@ public class LocalAnisetteProvider {
     private func callStartProvisionUC(libDir: String, provisioningDir: String, identifier: [UInt8], spim: [UInt8]) throws -> (cpim: Data, session: UInt32) {
         var outPtr: UnsafeMutablePointer<CChar>? = nil
         let res = start_provision_uc(libDir, provisioningDir, identifier, spim, UInt32(spim.count), &outPtr)
-        defer { if let p = outPtr { free_rust_string(p) } }
+        defer { if let p = outPtr { free_c_string(p) } }
 
         guard let ptr = outPtr else {
             throw NSError(domain: "AnisetteKit", code: Int(res), userInfo: [NSLocalizedDescriptionKey: "Unicorn loader returned nil (code: \(res))"])
@@ -254,7 +254,7 @@ public class LocalAnisetteProvider {
     private func callEndProvisionUC(libDir: String, provisioningDir: String, identifier: [UInt8], session: UInt32, ptm: [UInt8], tk: [UInt8]) throws -> Data {
         var outPtr: UnsafeMutablePointer<CChar>? = nil
         let res = end_provision_uc(libDir, provisioningDir, identifier, session, ptm, UInt32(ptm.count), tk, UInt32(tk.count), &outPtr)
-        defer { if let p = outPtr { free_rust_string(p) } }
+        defer { if let p = outPtr { free_c_string(p) } }
 
         guard let ptr = outPtr else {
             throw NSError(domain: "AnisetteKit", code: Int(res), userInfo: [NSLocalizedDescriptionKey: "Unicorn loader returned nil (code: \(res))"])
@@ -397,7 +397,7 @@ private extension LocalAnisetteProvider {
     func callGetAnisetteHeaders(libDir: String, provisioningDir: String, identifier: [UInt8], adiPb: [UInt8]) throws -> [String: String] {
         var outPtr: UnsafeMutablePointer<CChar>? = nil
         let res = get_anisette_headers_c(libDir, provisioningDir, identifier, adiPb, UInt32(adiPb.count), &outPtr)
-        defer { if let p = outPtr { free_rust_string(p) } }
+        defer { if let p = outPtr { free_c_string(p) } }
 
         guard let ptr = outPtr else {
             throw NSError(domain: "AnisetteKit", code: Int(res), userInfo: [NSLocalizedDescriptionKey: "C++ loader returned nil (code: \(res))"])
@@ -412,7 +412,7 @@ private extension LocalAnisetteProvider {
     func callStartProvision(libDir: String, provisioningDir: String, identifier: [UInt8], spim: [UInt8]) throws -> (cpim: Data, session: UInt32) {
         var outPtr: UnsafeMutablePointer<CChar>? = nil
         let res = start_provision_c(libDir, provisioningDir, identifier, spim, UInt32(spim.count), &outPtr)
-        defer { if let p = outPtr { free_rust_string(p) } }
+        defer { if let p = outPtr { free_c_string(p) } }
 
         guard let ptr = outPtr else {
             throw NSError(domain: "AnisetteKit", code: Int(res), userInfo: [NSLocalizedDescriptionKey: "C++ loader returned nil (code: \(res))"])
@@ -435,7 +435,7 @@ private extension LocalAnisetteProvider {
     func callEndProvision(libDir: String, provisioningDir: String, identifier: [UInt8], session: UInt32, ptm: [UInt8], tk: [UInt8]) throws -> Data {
         var outPtr: UnsafeMutablePointer<CChar>? = nil
         let res = end_provision_c(libDir, provisioningDir, identifier, session, ptm, UInt32(ptm.count), tk, UInt32(tk.count), &outPtr)
-        defer { if let p = outPtr { free_rust_string(p) } }
+        defer { if let p = outPtr { free_c_string(p) } }
 
         guard let ptr = outPtr else {
             throw NSError(domain: "AnisetteKit", code: Int(res), userInfo: [NSLocalizedDescriptionKey: "C++ loader returned nil (code: \(res))"])

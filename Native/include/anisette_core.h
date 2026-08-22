@@ -48,7 +48,7 @@ typedef enum {
 
 const char* get_anisette_error_description(int32_t code);
 
-void free_rust_string(char *ptr);
+void free_c_string(char *ptr);
 
 int32_t get_anisette_headers_c(
     const char *lib_dir,

@@ -49,7 +49,7 @@ const char* get_anisette_error_description(int32_t code) {
     }
 }
 
-void free_rust_string(char *ptr) {
+void free_c_string(char *ptr) {
     if (ptr) {
         free(ptr);
     }
