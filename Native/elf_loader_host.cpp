@@ -6,8 +6,8 @@
 //  Copyright © 2026 Magesh K. All rights reserved.
 //
 
-#include "include/elf_loader_host.h"
-#include "include/anisette_base.h"
+#include "elf_loader_host.h"
+#include "anisette_base.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>

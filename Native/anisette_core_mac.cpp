@@ -6,9 +6,9 @@
 //  Copyright © 2026 Magesh K. All rights reserved.
 //
 
-#include "include/anisette_core.h"
-#include "include/anisette_base.h"
-#include "include/elf_loader_host.h"
+#include "anisette_core.h"
+#include "anisette_base.h"
+#include "elf_loader_host.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>

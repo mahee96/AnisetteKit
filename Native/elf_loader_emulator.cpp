@@ -6,7 +6,7 @@
 //  Copyright © 2026 Magesh K. All rights reserved.
 //
 
-#include "include/elf_loader_emulator.h"
+#include "elf_loader_emulator.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>

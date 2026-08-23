@@ -30,7 +30,7 @@ let package = Package(
             ],
             path: "Native",
             cSettings: [
-                .headerSearchPath("include")
+                .headerSearchPath(".")
             ]
         ),
         .binaryTarget(
