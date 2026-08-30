@@ -41,7 +41,7 @@ let package = Package(
         .binaryTarget(
             name: "Unicorn",
             url: "https://github.com/mahee96/unicorn/releases/download/2.1.4-multiarch/Unicorn.xcframework.zip",
-            checksum: "bdbc56ca7f63ed7b2ce8879b04a4e1c3ccc23a477c13b4afeb989db92341ed77"
+            checksum: "4f61907db6aafc56fb3e336b524d742342312f498bb40739f1da55fb4a24614a"
         ),
         .target(
             name: "AnisetteKit",
