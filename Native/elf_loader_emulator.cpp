@@ -543,10 +543,20 @@ static void hook_lstat(EmulatorVM *vm) {
         linux_st.st_mtime_nsec = (uint64_t)host_st.st_mtimespec.tv_nsec;
         linux_st.st_ctime = (int64_t)host_st.st_ctimespec.tv_sec;
         linux_st.st_ctime_nsec = (uint64_t)host_st.st_ctimespec.tv_nsec;
-#else
+#elif defined(_WIN32)
         linux_st.st_atime = (int64_t)host_st.st_atime;
+        linux_st.st_atime_nsec = 0;
         linux_st.st_mtime = (int64_t)host_st.st_mtime;
+        linux_st.st_mtime_nsec = 0;
         linux_st.st_ctime = (int64_t)host_st.st_ctime;
+        linux_st.st_ctime_nsec = 0;
+#else
+        linux_st.st_atime = (int64_t)host_st.st_atim.tv_sec;
+        linux_st.st_atime_nsec = (uint64_t)host_st.st_atim.tv_nsec;
+        linux_st.st_mtime = (int64_t)host_st.st_mtim.tv_sec;
+        linux_st.st_mtime_nsec = (uint64_t)host_st.st_mtim.tv_nsec;
+        linux_st.st_ctime = (int64_t)host_st.st_ctim.tv_sec;
+        linux_st.st_ctime_nsec = (uint64_t)host_st.st_ctim.tv_nsec;
 #endif
         uc_mem_write(vm->uc, stat_buf_ptr, &linux_st, sizeof(linux_st));
         uint32_t zero_err = 0;
@@ -587,10 +597,20 @@ static void hook_fstat(EmulatorVM *vm) {
             linux_st.st_mtime_nsec = (uint64_t)host_st.st_mtimespec.tv_nsec;
             linux_st.st_ctime = (int64_t)host_st.st_ctimespec.tv_sec;
             linux_st.st_ctime_nsec = (uint64_t)host_st.st_ctimespec.tv_nsec;
-#else
+#elif defined(_WIN32)
             linux_st.st_atime = (int64_t)host_st.st_atime;
+            linux_st.st_atime_nsec = 0;
             linux_st.st_mtime = (int64_t)host_st.st_mtime;
+            linux_st.st_mtime_nsec = 0;
             linux_st.st_ctime = (int64_t)host_st.st_ctime;
+            linux_st.st_ctime_nsec = 0;
+#else
+            linux_st.st_atime = (int64_t)host_st.st_atim.tv_sec;
+            linux_st.st_atime_nsec = (uint64_t)host_st.st_atim.tv_nsec;
+            linux_st.st_mtime = (int64_t)host_st.st_mtim.tv_sec;
+            linux_st.st_mtime_nsec = (uint64_t)host_st.st_mtim.tv_nsec;
+            linux_st.st_ctime = (int64_t)host_st.st_ctim.tv_sec;
+            linux_st.st_ctime_nsec = (uint64_t)host_st.st_ctim.tv_nsec;
 #endif
             uc_mem_write(vm->uc, stat_buf_ptr, &linux_st, sizeof(linux_st));
             res = 0;

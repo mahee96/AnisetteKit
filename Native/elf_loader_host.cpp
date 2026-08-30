@@ -98,12 +98,28 @@ extern "C" {
         buf->st_size    = st.st_size;
         buf->st_blksize = st.st_blksize;
         buf->st_blocks  = st.st_blocks;
+#if defined(__APPLE__) || defined(__MACH__)
         buf->st_atime      = st.st_atimespec.tv_sec;
         buf->st_atime_nsec = st.st_atimespec.tv_nsec;
         buf->st_mtime      = st.st_mtimespec.tv_sec;
         buf->st_mtime_nsec = st.st_mtimespec.tv_nsec;
         buf->st_ctime      = st.st_ctimespec.tv_sec;
         buf->st_ctime_nsec = st.st_ctimespec.tv_nsec;
+#elif defined(_WIN32)
+        buf->st_atime      = (int64_t)st.st_atime;
+        buf->st_atime_nsec = 0;
+        buf->st_mtime      = (int64_t)st.st_mtime;
+        buf->st_mtime_nsec = 0;
+        buf->st_ctime      = (int64_t)st.st_ctime;
+        buf->st_ctime_nsec = 0;
+#else
+        buf->st_atime      = (int64_t)st.st_atim.tv_sec;
+        buf->st_atime_nsec = (uint64_t)st.st_atim.tv_nsec;
+        buf->st_mtime      = (int64_t)st.st_mtim.tv_sec;
+        buf->st_mtime_nsec = (uint64_t)st.st_mtim.tv_nsec;
+        buf->st_ctime      = (int64_t)st.st_ctim.tv_sec;
+        buf->st_ctime_nsec = (uint64_t)st.st_ctim.tv_nsec;
+#endif
         return 0;
     }
 
@@ -126,17 +142,39 @@ extern "C" {
         buf->st_size    = st.st_size;
         buf->st_blksize = st.st_blksize;
         buf->st_blocks  = st.st_blocks;
+#if defined(__APPLE__) || defined(__MACH__)
         buf->st_atime      = st.st_atimespec.tv_sec;
         buf->st_atime_nsec = st.st_atimespec.tv_nsec;
         buf->st_mtime      = st.st_mtimespec.tv_sec;
         buf->st_mtime_nsec = st.st_mtimespec.tv_nsec;
         buf->st_ctime      = st.st_ctimespec.tv_sec;
         buf->st_ctime_nsec = st.st_ctimespec.tv_nsec;
+#elif defined(_WIN32)
+        buf->st_atime      = (int64_t)st.st_atime;
+        buf->st_atime_nsec = 0;
+        buf->st_mtime      = (int64_t)st.st_mtime;
+        buf->st_mtime_nsec = 0;
+        buf->st_ctime      = (int64_t)st.st_ctime;
+        buf->st_ctime_nsec = 0;
+#else
+        buf->st_atime      = (int64_t)st.st_atim.tv_sec;
+        buf->st_atime_nsec = (uint64_t)st.st_atim.tv_nsec;
+        buf->st_mtime      = (int64_t)st.st_mtim.tv_sec;
+        buf->st_mtime_nsec = (uint64_t)st.st_mtim.tv_nsec;
+        buf->st_ctime      = (int64_t)st.st_ctim.tv_sec;
+        buf->st_ctime_nsec = (uint64_t)st.st_ctim.tv_nsec;
+#endif
         return 0;
     }
 
     int* hook_errno() {
+#if defined(__APPLE__)
         return __error();
+#elif defined(_WIN32)
+        return _errno();
+#else
+        return __errno_location();
+#endif
     }
 }
 
