@@ -7,7 +7,7 @@
 //
 
 import Foundation
-import CommonCrypto
+import Crypto
 import anisette_core
 
 public struct LocalAnisetteHeaders {

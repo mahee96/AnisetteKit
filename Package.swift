@@ -21,16 +21,21 @@ let package = Package(
             targets: ["AnisetteKit"]
         )
     ],
-    dependencies: [],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-crypto.git", "4.0.0" ..< "5.0.0")
+    ],
     targets: [
         .target(
             name: "anisette_core",
             dependencies: [
-                "Unicorn"
+                .target(name: "Unicorn", condition: .when(platforms: [.iOS, .macOS, .tvOS, .watchOS, .visionOS]))
             ],
             path: "Native",
             cSettings: [
                 .headerSearchPath(".")
+            ],
+            linkerSettings: [
+                .linkedLibrary("unicorn", .when(platforms: [.linux, .android]))
             ]
         ),
         .binaryTarget(
@@ -41,7 +46,8 @@ let package = Package(
         .target(
             name: "AnisetteKit",
             dependencies: [
-                "anisette_core"
+                "anisette_core",
+                .product(name: "Crypto", package: "swift-crypto")
             ],
             path: ".",
             exclude: [
@@ -61,4 +67,3 @@ let package = Package(
     ],
     cxxLanguageStandard: .cxx17
 )
-
