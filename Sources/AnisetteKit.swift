@@ -385,9 +385,7 @@ public class LocalAnisetteProvider {
     }
 
     private func CommonSHA256(data: Data) -> Data {
-        var hash = [UInt8](repeating: 0, count: 32)
-        data.withUnsafeBytes { _ = CC_SHA256($0.baseAddress, CC_LONG(data.count), &hash) }
-        return Data(hash)
+        Data(SHA256.hash(data: data))
     }
 }
 
