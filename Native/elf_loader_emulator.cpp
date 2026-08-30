@@ -19,6 +19,7 @@
 #include <vector>
 #include <unordered_map>
 #include <sstream>
+#include <random>
 
 const AndroidSystemProperties kAndroidProperties;
 
@@ -652,7 +653,13 @@ static void hook_system_property_get(EmulatorVM *vm) {
 }
 
 static void hook_arc4random(EmulatorVM *vm) {
+#if defined(__APPLE__) || defined(__FreeBSD__) || defined(__OpenBSD__)
     uint64_t rnd = (uint64_t)arc4random();
+#else
+    static thread_local std::random_device rd;
+    static thread_local std::mt19937 gen(rd());
+    uint64_t rnd = (uint64_t)gen();
+#endif
     uc_reg_write(vm->uc, UC_ARM64_REG_X0, &rnd);
 }
 
