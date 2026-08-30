@@ -35,13 +35,13 @@ let package = Package(
                 .headerSearchPath(".")
             ],
             linkerSettings: [
-                .linkedLibrary("unicorn", .when(platforms: [.linux, .android]))
+                .linkedLibrary("unicorn", .when(platforms: [.linux, .android, .windows]))
             ]
         ),
         .binaryTarget(
             name: "Unicorn",
-            url: "https://github.com/mahee96/unicorn/releases/download/2.1.4-xcf-37ffdfb1/Unicorn.xcframework.zip",
-            checksum: "4158de08c5979a80a9c4d54c47fd8fdbde0a87ca0e16b1a3deba1ecfadcbd17b"
+            url: "https://github.com/mahee96/unicorn/releases/download/2.1.4-multiarch/Unicorn.xcframework.zip",
+            checksum: "bdbc56ca7f63ed7b2ce8879b04a4e1c3ccc23a477c13b4afeb989db92341ed77"
         ),
         .target(
             name: "AnisetteKit",
