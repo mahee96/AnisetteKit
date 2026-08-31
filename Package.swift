@@ -17,12 +17,18 @@ let unicornBinaryTargets: [Target] = [
         checksum: "4f61907db6aafc56fb3e336b524d742342312f498bb40739f1da55fb4a24614a"
     )
 ]
-let unicornCoreDependencies: [Target.Dependency] = [
-    .target(name: "Unicorn", condition: .when(platforms: [.iOS, .macOS, .tvOS, .watchOS, .visionOS]))
+let unicornCoreDependencies: [Target.Dependency] = []
+let unicornBinaryDependencies: [Target.Dependency] = [
+    "Unicorn"
 ]
+let unicornLinkerSettings: [LinkerSetting] = []
 #else
 let unicornBinaryTargets: [Target] = []
 let unicornCoreDependencies: [Target.Dependency] = []
+let unicornBinaryDependencies: [Target.Dependency] = []
+let unicornLinkerSettings: [LinkerSetting] = [
+    .linkedLibrary("unicorn")
+]
 #endif
 
 let package = Package(
@@ -48,16 +54,14 @@ let package = Package(
             cSettings: [
                 .headerSearchPath(".")
             ],
-            linkerSettings: [
-                .linkedLibrary("unicorn", .when(platforms: [.linux, .android, .windows]))
-            ]
+            linkerSettings: unicornLinkerSettings
         ),
         .target(
             name: "AnisetteKit",
             dependencies: [
                 "anisette_core",
                 .product(name: "Crypto", package: "swift-crypto")
-            ],
+            ] + unicornBinaryDependencies,
             path: ".",
             exclude: [
                 "Package.swift",
