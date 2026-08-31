@@ -9,6 +9,17 @@
 #ifndef ELF_LOADER_EMULATOR_H
 #define ELF_LOADER_EMULATOR_H
 
+#if defined(_WIN32) || defined(_MSC_VER)
+#ifndef WIN32_LEAN_AND_MEAN
+#define WIN32_LEAN_AND_MEAN
+#endif
+#ifndef NOMINMAX
+#define NOMINMAX
+#endif
+#include <winsock2.h>
+#include <windows.h>
+#endif
+
 #include <stdint.h>
 #include <stddef.h>
 #include <string>
