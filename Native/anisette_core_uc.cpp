@@ -18,6 +18,21 @@
 #include <unistd.h>
 #endif
 #include <sys/stat.h>
+
+#if defined(_WIN32) || defined(_MSC_VER)
+#define NOMINMAX
+#include <io.h>
+#include <direct.h>
+#define mkdir(p, m) _mkdir(p)
+#define rmdir _rmdir
+#define stat _stat64
+#ifndef S_ISDIR
+#define S_ISDIR(m) (((m) & _S_IFMT) == _S_IFDIR)
+#endif
+#ifndef S_ISREG
+#define S_ISREG(m) (((m) & _S_IFMT) == _S_IFREG)
+#endif
+#endif
 #include <string>
 #include <vector>
 #include <sstream>

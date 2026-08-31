@@ -14,9 +14,12 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 
-#if defined(_WIN32)
+#if defined(_WIN32) || defined(_MSC_VER)
+#define NOMINMAX
 #include <io.h>
+#include <direct.h>
 #include <process.h>
+#include <winsock2.h>
 #include <windows.h>
 #define close _close
 #define read _read
@@ -25,15 +28,10 @@
 #define fstat _fstat64
 #define lstat _stat64
 #define stat _stat64
+#define ftruncate _chsize
+#define mkdir(p, m) _mkdir(p)
+#define rmdir _rmdir
 typedef int mode_t;
-
-#ifndef _TIMEVAL_DEFINED
-#define _TIMEVAL_DEFINED
-struct timeval {
-    long tv_sec;
-    long tv_usec;
-};
-#endif
 
 static inline int gettimeofday(struct timeval *tv, void *tz) {
     (void)tz;
@@ -656,8 +654,13 @@ static void hook_fstat(EmulatorVM *vm) {
             linux_st.st_gid = (uint32_t)host_st.st_gid;
             linux_st.st_rdev = (uint64_t)host_st.st_rdev;
             linux_st.st_size = (int64_t)host_st.st_size;
+#if defined(_WIN32) || defined(_MSC_VER)
+            linux_st.st_blksize = 4096;
+            linux_st.st_blocks = (linux_st.st_size + 511) / 512;
+#else
             linux_st.st_blksize = (int32_t)host_st.st_blksize;
             linux_st.st_blocks = (int64_t)host_st.st_blocks;
+#endif
 #if defined(__APPLE__) || defined(__MACH__)
             linux_st.st_atime = (int64_t)host_st.st_atimespec.tv_sec;
             linux_st.st_atime_nsec = (uint64_t)host_st.st_atimespec.tv_nsec;
@@ -712,7 +715,7 @@ static void hook_system_property_get(EmulatorVM *vm) {
 
     if (val_ptr != 0) {
         std::vector<uint8_t> buf(92, 0);
-        memcpy(buf.data(), prop_val.c_str(), std::min((size_t)91, prop_val.length()));
+        memcpy(buf.data(), prop_val.c_str(), (std::min)((size_t)91, prop_val.length()));
         uc_mem_write(vm->uc, val_ptr, buf.data(), 92);
     }
     int64_t ret = (int64_t)prop_val.length();
