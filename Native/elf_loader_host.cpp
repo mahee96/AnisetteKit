@@ -7,6 +7,11 @@
 //
 
 #include "elf_loader_host.h"
+
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_OS_OSX
+
 #include "anisette_base.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -19,11 +24,6 @@
 #include <vector>
 #include <map>
 #include <sstream>
-
-#ifdef __APPLE__
-#include <TargetConditionals.h>
-#if TARGET_OS_OSX
-
 #include <sys/mman.h>
 #include <sys/stat.h>
 #include <sys/time.h>

@@ -12,9 +12,71 @@
 #include <stdint.h>
 #include <string.h>
 #include <fcntl.h>
-#include <unistd.h>
 #include <sys/stat.h>
+
+#if defined(_WIN32)
+#include <io.h>
+#include <process.h>
+#include <windows.h>
+#define close _close
+#define read _read
+#define write _write
+#define open _open
+#define fstat _fstat64
+#define lstat _stat64
+#define stat _stat64
+typedef int mode_t;
+
+#ifndef _TIMEVAL_DEFINED
+#define _TIMEVAL_DEFINED
+struct timeval {
+    long tv_sec;
+    long tv_usec;
+};
+#endif
+
+static inline int gettimeofday(struct timeval *tv, void *tz) {
+    (void)tz;
+    if (tv) {
+        FILETIME ft;
+        GetSystemTimeAsFileTime(&ft);
+        ULARGE_INTEGER uli;
+        uli.LowPart = ft.dwLowDateTime;
+        uli.HighPart = ft.dwHighDateTime;
+        uint64_t unix_time_100ns = uli.QuadPart - 116444736000000000ULL;
+        tv->tv_sec = (long)(unix_time_100ns / 10000000ULL);
+        tv->tv_usec = (long)((unix_time_100ns % 10000000ULL) / 10);
+    }
+    return 0;
+}
+
+#ifndef O_NOCTTY
+#define O_NOCTTY 0
+#endif
+#ifndef O_NONBLOCK
+#define O_NONBLOCK 0
+#endif
+#ifndef O_SYNC
+#define O_SYNC 0
+#endif
+#ifndef O_CLOEXEC
+#define O_CLOEXEC 0
+#endif
+#ifndef O_BINARY
+#ifdef _O_BINARY
+#define O_BINARY _O_BINARY
+#else
+#define O_BINARY 0
+#endif
+#endif
+
+#else
+#include <unistd.h>
 #include <sys/time.h>
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+#endif
 #include <string>
 #include <vector>
 #include <unordered_map>
@@ -535,8 +597,13 @@ static void hook_lstat(EmulatorVM *vm) {
         linux_st.st_gid = (uint32_t)host_st.st_gid;
         linux_st.st_rdev = (uint64_t)host_st.st_rdev;
         linux_st.st_size = (int64_t)host_st.st_size;
+#if defined(_WIN32)
+        linux_st.st_blksize = 4096;
+        linux_st.st_blocks = (linux_st.st_size + 511) / 512;
+#else
         linux_st.st_blksize = (int32_t)host_st.st_blksize;
         linux_st.st_blocks = (int64_t)host_st.st_blocks;
+#endif
 #if defined(__APPLE__) || defined(__MACH__)
         linux_st.st_atime = (int64_t)host_st.st_atimespec.tv_sec;
         linux_st.st_atime_nsec = (uint64_t)host_st.st_atimespec.tv_nsec;

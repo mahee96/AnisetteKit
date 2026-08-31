@@ -7,6 +7,11 @@
 //
 
 #include "anisette_core.h"
+
+#ifdef __APPLE__
+#include <TargetConditionals.h>
+#if TARGET_OS_OSX
+
 #include "anisette_base.h"
 #include "elf_loader_host.h"
 #include <stdio.h>
@@ -16,10 +21,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
-
-#ifdef __APPLE__
-#include <TargetConditionals.h>
-#if TARGET_OS_OSX
+#include <sys/stat.h>
 
 #define LOG(...) do { printf(__VA_ARGS__); fflush(stdout); } while(0)
 
