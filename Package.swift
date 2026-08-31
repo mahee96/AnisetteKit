@@ -9,6 +9,22 @@
 
 import PackageDescription
 
+#if canImport(Darwin)
+let unicornBinaryTargets: [Target] = [
+    .binaryTarget(
+        name: "Unicorn",
+        url: "https://github.com/mahee96/unicorn/releases/download/2.1.4-multiarch/Unicorn.xcframework.zip",
+        checksum: "4f61907db6aafc56fb3e336b524d742342312f498bb40739f1da55fb4a24614a"
+    )
+]
+let unicornCoreDependencies: [Target.Dependency] = [
+    .target(name: "Unicorn", condition: .when(platforms: [.iOS, .macOS, .tvOS, .watchOS, .visionOS]))
+]
+#else
+let unicornBinaryTargets: [Target] = []
+let unicornCoreDependencies: [Target.Dependency] = []
+#endif
+
 let package = Package(
     name: "AnisetteKit",
     platforms: [
@@ -27,9 +43,7 @@ let package = Package(
     targets: [
         .target(
             name: "anisette_core",
-            dependencies: [
-                .target(name: "Unicorn", condition: .when(platforms: [.iOS, .macOS, .tvOS, .watchOS, .visionOS]))
-            ],
+            dependencies: unicornCoreDependencies,
             path: "Native",
             cSettings: [
                 .headerSearchPath(".")
@@ -37,11 +51,6 @@ let package = Package(
             linkerSettings: [
                 .linkedLibrary("unicorn", .when(platforms: [.linux, .android, .windows]))
             ]
-        ),
-        .binaryTarget(
-            name: "Unicorn",
-            url: "https://github.com/mahee96/unicorn/releases/download/2.1.4-multiarch/Unicorn.xcframework.zip",
-            checksum: "4f61907db6aafc56fb3e336b524d742342312f498bb40739f1da55fb4a24614a"
         ),
         .target(
             name: "AnisetteKit",
@@ -66,6 +75,6 @@ let package = Package(
             ],
             path: "Tests"
         )
-    ],
+    ] + unicornBinaryTargets,
     cxxLanguageStandard: .cxx17
 )
