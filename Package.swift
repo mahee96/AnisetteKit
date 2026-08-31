@@ -53,7 +53,9 @@ let package = Package(
             exclude: [
                 "Package.swift",
                 "Native", 
-                "Tests"
+                "Tests",
+                "README.md",
+                "LICENSE"
             ],
             sources: ["Sources"]
         ),
