@@ -20,6 +20,10 @@
 #include <TargetConditionals.h>
 #if TARGET_OS_OSX
 
+#include <stdio.h>
+
+#define LOG(...) do { printf(__VA_ARGS__); fflush(stdout); } while(0)
+
 class ElfLoader {
 public:
     void* base_addr;

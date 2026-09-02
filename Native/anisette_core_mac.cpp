@@ -13,7 +13,7 @@
 #if TARGET_OS_OSX
 
 #include "anisette_base.h"
-#include "elf_loader_host.h"
+#include "Loader/elf_loader_host.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -22,8 +22,6 @@
 #include <vector>
 #include <sstream>
 #include <sys/stat.h>
-
-#define LOG(...) do { printf(__VA_ARGS__); fflush(stdout); } while(0)
 
 static ElfLoader* g_adi = nullptr;
 static ElfLoader* g_ssc = nullptr;

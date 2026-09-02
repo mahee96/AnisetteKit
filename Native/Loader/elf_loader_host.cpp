@@ -31,8 +31,6 @@
 #include <mach/mach.h>
 #include <mach/vm_map.h>
 
-#define LOG(...) do { printf(__VA_ARGS__); fflush(stdout); } while(0)
-
 static inline const char* format_errno_suffix(int err) {
     static thread_local char buf[32];
     if (err == 0) return "";

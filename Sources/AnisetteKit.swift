@@ -134,9 +134,9 @@ public class LocalAnisetteProvider {
         identifier: UUID,
         storage: ProvisioningStorage = .disk
     ) async throws -> (headers: [String: String], newBlob: Data?) {
-#if !os(macOS)
+        #if !os(macOS)
         return try await getHeadersUC(identifier: identifier, storage: storage)
-#else
+        #else
         let (adiPbData, generatedBlob, cleanup) = try await resolveProvisioningBlob(
             identifier: identifier,
             storage: storage
@@ -153,7 +153,7 @@ public class LocalAnisetteProvider {
         )
 
         return (formatAnisetteHeaders(rawHeaders: headers, identifier: identifier), generatedBlob)
-#endif
+        #endif
     }
 
     public func getHeadersUC(identifier: UUID) async throws -> [String: String] {
