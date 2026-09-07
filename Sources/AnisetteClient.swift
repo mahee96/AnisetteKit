@@ -146,12 +146,15 @@ extension AnisetteClient {
             adiPb: [UInt8](adiPbData)
         )
 
-        let headers = (customHeaders ?? AnisetteRequestHeaders.defaultHeaders).with {
-            $0.oneTimePassword = response.oneTimePassword
-            $0.machineID       = response.machineID
-            if $0.deviceID == nil { $0.deviceID = identifier.uuidString.uppercased() }
-            if let storedRinfo = getStoredRoutingInfo(for: identifier) { $0.routingInfo = storedRinfo }
-        }
+        let headers = AnisetteRequestHeaders.defaultHeaders
+            .applyingOverrides(customHeaders)
+            .with {
+                $0.oneTimePassword = response.oneTimePassword
+                $0.machineID       = response.machineID
+                if $0.deviceID == nil { $0.deviceID = identifier.uuidString.uppercased() }
+                if let storedRinfo = getStoredRoutingInfo(for: identifier) { $0.routingInfo = storedRinfo }
+                if $0.date == nil && $0.clientTime == nil { $0.date = Date() }
+            }
 
         return (AnisetteHeadersDTO.toDictionary(from: headers), generatedBlob)
     }
@@ -320,10 +323,13 @@ extension AnisetteClient {
         var req = URLRequest(url: url)
         req.httpMethod = httpMethod
 
-        let headers = (customHeaders ?? AnisetteRequestHeaders.defaultHeaders).with {
-            if $0.deviceID == nil { $0.deviceID = identifier.uuidString.uppercased() }
-            if let routingInfo = routingInfo { $0.routingInfo = routingInfo }
-        }
+        let headers = AnisetteRequestHeaders.defaultHeaders
+            .applyingOverrides(customHeaders)
+            .with {
+                if $0.deviceID == nil { $0.deviceID = identifier.uuidString.uppercased() }
+                if let routingInfo { $0.routingInfo = routingInfo }
+                if $0.date == nil && $0.clientTime == nil { $0.date = Date() }
+            }
 
         let dict = AnisetteHeadersDTO.toDictionary(from: headers)
         for (k, v) in dict {
