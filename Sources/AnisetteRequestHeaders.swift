@@ -1,5 +1,5 @@
 //
-//  AnisetteHeaders.swift
+//  AnisetteRequestHeaders.swift
 //  AnisetteKit
 //
 //  Created by Magesh K on 07/09/26.
@@ -8,7 +8,7 @@
 
 import Foundation
 
-public struct AnisetteHeaders: Sendable, Codable, Equatable, Hashable {
+public struct AnisetteRequestHeaders: Sendable, Codable, Equatable, Hashable {
     public var machineID: String? = nil
     public var oneTimePassword: String? = nil
     public var localUserID: String? = nil
@@ -28,11 +28,11 @@ public struct AnisetteHeaders: Sendable, Codable, Equatable, Hashable {
     public init() {}
 
     public init(rawHeaders: [String: String]) {
-        self = AnisetteHeadersDTO.toHeaders(from: rawHeaders)
+        self = AnisetteHeadersDTO.toRequestHeaders(from: rawHeaders)
     }
 
-    public static var defaultHeaders: AnisetteHeaders {
-        AnisetteHeaders().with {
+    public static var defaultHeaders: AnisetteRequestHeaders {
+        AnisetteRequestHeaders().with {
             $0.localUserID  = AnisetteConstants.defaultLocalUserID
             $0.routingInfo  = AnisetteConstants.defaultRoutingInfo
             $0.serialNumber = AnisetteConstants.defaultSerialNumber
@@ -45,7 +45,7 @@ public struct AnisetteHeaders: Sendable, Codable, Equatable, Hashable {
         }
     }
 
-    public func with(_ modify: (inout AnisetteHeaders) throws -> Void) rethrows -> AnisetteHeaders {
+    public func with(_ modify: (inout AnisetteRequestHeaders) throws -> Void) rethrows -> AnisetteRequestHeaders {
         var copy = self
         try modify(&copy)
         return copy

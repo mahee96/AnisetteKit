@@ -57,15 +57,15 @@ struct AnisetteKitTests {
     }
 
     @Test
-    func anisetteHeadersCustomization() {
-        let h1 = AnisetteHeaders().with {
+    func anisetteRequestHeadersCustomization() {
+        let h1 = AnisetteRequestHeaders().with {
             $0.deviceID = "TEST_DEV_ID"
             $0.clientInfo = "TEST_CLIENT_INFO"
         }
         #expect(h1.deviceID == "TEST_DEV_ID")
         #expect(h1.clientInfo == "TEST_CLIENT_INFO")
 
-        let h2 = AnisetteHeaders.defaultHeaders.with {
+        let h2 = AnisetteRequestHeaders.defaultHeaders.with {
             $0.deviceID = "CUSTOM_DEV_ID"
         }
         #expect(h2.deviceID == "CUSTOM_DEV_ID")
@@ -86,8 +86,15 @@ struct AnisetteKitTests {
     }
 
     @Test
+    func anisetteHeaderResponseStructure() {
+        let resp = AnisetteHeaderResponse(oneTimePassword: "OTP", machineID: "MID")
+        #expect(resp.oneTimePassword == "OTP")
+        #expect(resp.machineID == "MID")
+    }
+
+    @Test
     func anisetteHeadersDTORoundtrip() {
-        let headers = AnisetteHeaders().with {
+        let headers = AnisetteRequestHeaders().with {
             $0.machineID = "M_TEST"
             $0.oneTimePassword = "OTP_TEST"
             $0.localUserID = "LU_TEST"

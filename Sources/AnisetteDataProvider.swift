@@ -11,7 +11,7 @@ import anisette_core
 
 
 public protocol AnisetteDataProvider: Sendable {
-    func getAnisetteHeaders(libDir: String, provisioningDir: String, identifier: [UInt8], adiPb: [UInt8]) async throws -> AnisetteHeaders
+    func getAnisetteHeaders(libDir: String, provisioningDir: String, identifier: [UInt8], adiPb: [UInt8]) async throws -> AnisetteHeaderResponse
     func startProvision(libDir: String, provisioningDir: String, identifier: [UInt8], spim: [UInt8]) async throws -> (cpim: Data, session: UInt32)
     func endProvision(libDir: String, provisioningDir: String, identifier: [UInt8], session: UInt32, ptm: [UInt8], tk: [UInt8]) async throws -> Data
 }
@@ -19,7 +19,7 @@ public protocol AnisetteDataProvider: Sendable {
 public typealias CStringPointer = UnsafeMutablePointer<CChar>
 
 extension AnisetteDataProvider {
-    func parseHeadersResponse(code: Int32, outPtr: CStringPointer?, providerName: String) throws -> AnisetteHeaders {
+    func parseHeadersResponse(code: Int32, outPtr: CStringPointer?, providerName: String) throws -> AnisetteHeaderResponse {
         guard let ptr = outPtr else {
             throw AnisetteError.loaderFailed(reason: "\(providerName) loader returned nil (code: \(code))")
         }
@@ -27,7 +27,11 @@ extension AnisetteDataProvider {
         if let err = dict["error"] {
             throw AnisetteError.adiError(code: code, description: err)
         }
-        return AnisetteHeaders(rawHeaders: dict)
+        guard let otp = dict[AnisetteConstants.Headers.oneTimePassword] ?? dict["one_time_password"] ?? dict["otp"] ?? dict["X-Apple-I-MD"],
+              let mid = dict[AnisetteConstants.Headers.machineID] ?? dict["machine_id"] ?? dict["mid"] ?? dict["X-Apple-I-MD-M"] else {
+            throw AnisetteError.invalidResponse(reason: "Missing oneTimePassword or machineID from \(providerName) headers response")
+        }
+        return AnisetteHeaderResponse(oneTimePassword: otp, machineID: mid)
     }
 
     func parseStartProvisionResponse(code: Int32, outPtr: CStringPointer?, providerName: String) throws -> (cpim: Data, session: UInt32) {
@@ -75,7 +79,7 @@ extension AnisetteDataProvider {
 public struct UnicornAnisetteDataProvider: AnisetteDataProvider {
     public init() {}
 
-    public func getAnisetteHeaders(libDir: String, provisioningDir: String, identifier: [UInt8], adiPb: [UInt8]) throws -> AnisetteHeaders {
+    public func getAnisetteHeaders(libDir: String, provisioningDir: String, identifier: [UInt8], adiPb: [UInt8]) throws -> AnisetteHeaderResponse {
         var outPtr: CStringPointer? = nil
         let res = get_anisette_headers_uc(libDir, provisioningDir, identifier, adiPb, UInt32(adiPb.count), &outPtr)
         defer { if let p = outPtr { free_c_string(p) } }
@@ -101,7 +105,7 @@ public struct UnicornAnisetteDataProvider: AnisetteDataProvider {
 public struct NativeAnisetteDataProvider: AnisetteDataProvider {
     public init() {}
 
-    public func getAnisetteHeaders(libDir: String, provisioningDir: String, identifier: [UInt8], adiPb: [UInt8]) throws -> AnisetteHeaders {
+    public func getAnisetteHeaders(libDir: String, provisioningDir: String, identifier: [UInt8], adiPb: [UInt8]) throws -> AnisetteHeaderResponse {
         var outPtr: CStringPointer? = nil
         let res = get_anisette_headers_c(libDir, provisioningDir, identifier, adiPb, UInt32(adiPb.count), &outPtr)
         defer { if let p = outPtr { free_c_string(p) } }

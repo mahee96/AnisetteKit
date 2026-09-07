@@ -62,7 +62,7 @@ public class AnisetteClient: @unchecked Sendable {
     public func getHeaders(
         identifier: UUID,
         storage: ProvisioningStorage = .disk,
-        headers customHeaders: AnisetteHeaders? = nil,
+        headers customHeaders: AnisetteRequestHeaders? = nil,
         provider: (any AnisetteDataProvider)? = nil
     ) async throws -> (headers: [String: String], newBlob: Data?) {
         let resolvedProvider: any AnisetteDataProvider = provider ?? {
@@ -92,7 +92,7 @@ extension AnisetteClient {
     private func fetchHeaders(
         identifier: UUID,
         storage: ProvisioningStorage,
-        customHeaders: AnisetteHeaders?,
+        customHeaders: AnisetteRequestHeaders?,
         provider: any AnisetteDataProvider
     ) async throws -> (headers: [String: String], newBlob: Data?) {
         let (adiPbData, generatedBlob, cleanup) = try await resolveProvisioningBlob(
@@ -104,16 +104,16 @@ extension AnisetteClient {
         }
         defer { cleanup() }
 
-        let rawHeaders = try await provider.getAnisetteHeaders(
+        let response = try await provider.getAnisetteHeaders(
             libDir: libDir.path,
             provisioningDir: provisioningDir.path,
             identifier: identifier.uuidBytes,
             adiPb: [UInt8](adiPbData)
         )
 
-        let headers = (customHeaders ?? AnisetteHeaders.defaultHeaders).with {
-            $0.oneTimePassword = rawHeaders.oneTimePassword
-            $0.machineID       = rawHeaders.machineID
+        let headers = (customHeaders ?? AnisetteRequestHeaders.defaultHeaders).with {
+            $0.oneTimePassword = response.oneTimePassword
+            $0.machineID       = response.machineID
             if $0.deviceID == nil { $0.deviceID = identifier.uuidString.uppercased() }
             if let storedRinfo = getStoredRoutingInfo(for: identifier) { $0.routingInfo = storedRinfo }
         }
@@ -124,7 +124,7 @@ extension AnisetteClient {
     private func resolveProvisioningBlob(
         identifier: UUID,
         storage: ProvisioningStorage,
-        headers customHeaders: AnisetteHeaders? = nil,
+        headers customHeaders: AnisetteRequestHeaders? = nil,
         provisioner: () async throws -> Data
     ) async throws -> (data: Data, generated: Data?, cleanup: () -> Void) {
         let uuidProvDir = provisioningDir.appendingPathComponent(identifier.uuidString.lowercased())
@@ -183,7 +183,7 @@ extension AnisetteClient {
 
     func runProvisioningFlow(
         identifier: UUID,
-        headers customHeaders: AnisetteHeaders? = nil,
+        headers customHeaders: AnisetteRequestHeaders? = nil,
         provider: any AnisetteDataProvider
     ) async throws -> Data {
         verboseLog("[AnisetteKit] Fetching provisioning URLs from Apple lookup...")
@@ -291,12 +291,12 @@ extension AnisetteClient {
         identifier: UUID,
         httpMethod: String,
         routingInfo: String?,
-        headers customHeaders: AnisetteHeaders?
+        headers customHeaders: AnisetteRequestHeaders?
     ) -> URLRequest {
         var req = URLRequest(url: url)
         req.httpMethod = httpMethod
 
-        let headers = (customHeaders ?? AnisetteHeaders.defaultHeaders).with {
+        let headers = (customHeaders ?? AnisetteRequestHeaders.defaultHeaders).with {
             if $0.deviceID == nil { $0.deviceID = identifier.uuidString.uppercased() }
             if let routingInfo = routingInfo { $0.routingInfo = routingInfo }
         }
@@ -309,7 +309,7 @@ extension AnisetteClient {
         return req
     }
 
-    private func fetchSpim(startURL: URL, identifier: UUID, routingInfo: String? = nil, headers customHeaders: AnisetteHeaders? = nil) async throws -> (spim: Data, routingInfo: String?) {
+    private func fetchSpim(startURL: URL, identifier: UUID, routingInfo: String? = nil, headers customHeaders: AnisetteRequestHeaders? = nil) async throws -> (spim: Data, routingInfo: String?) {
         var req = createRequest(url: startURL, identifier: identifier, httpMethod: "POST", routingInfo: routingInfo, headers: customHeaders)
         req.httpBody = try? PropertyListSerialization.data(fromPropertyList: ["Header": [:], "Request": [:]] as [String: Any], format: .xml, options: 0)
 
@@ -327,7 +327,7 @@ extension AnisetteClient {
         return (spimData, discoveredRinfo)
     }
 
-    private func fetchPtmTk(endURL: URL, cpim: Data, identifier: UUID, routingInfo: String? = nil, headers customHeaders: AnisetteHeaders? = nil) async throws -> (ptm: Data, tk: Data, routingInfo: String?) {
+    private func fetchPtmTk(endURL: URL, cpim: Data, identifier: UUID, routingInfo: String? = nil, headers customHeaders: AnisetteRequestHeaders? = nil) async throws -> (ptm: Data, tk: Data, routingInfo: String?) {
         var req = createRequest(url: endURL, identifier: identifier, httpMethod: "POST", routingInfo: routingInfo, headers: customHeaders)
         req.httpBody = try? PropertyListSerialization.data(fromPropertyList: ["Header": [:], "Request": ["cpim": cpim.base64EncodedString()]] as [String: Any], format: .xml, options: 0)
 
