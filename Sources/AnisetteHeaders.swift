@@ -8,7 +8,7 @@
 
 import Foundation
 
-public struct AnisetteHeaders: Sendable, Equatable {
+public struct AnisetteHeaders: Sendable, Codable, Equatable, Hashable {
     public var machineID: String? = nil
     public var oneTimePassword: String? = nil
     public var localUserID: String? = nil
