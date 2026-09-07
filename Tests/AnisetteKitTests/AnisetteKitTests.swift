@@ -98,7 +98,6 @@ struct AnisetteKitTests {
             $0.userAgent = "UA_TEST"
             $0.locale = "en_US"
             $0.timeZone = "UTC"
-            $0.additionalHeaders = ["Custom-Key": "Custom-Val"]
         }
 
         let dict = AnisetteHeadersDTO.toDictionary(from: headers)
@@ -112,7 +111,6 @@ struct AnisetteKitTests {
         #expect(dict[AnisetteConstants.Headers.userAgent] == "UA_TEST")
         #expect(dict[AnisetteConstants.Headers.locale] == "en_US")
         #expect(dict[AnisetteConstants.Headers.timeZone] == "UTC")
-        #expect(dict["Custom-Key"] == "Custom-Val")
 
         let restored = AnisetteHeadersDTO.toHeaders(from: dict)
         #expect(restored.machineID == "M_TEST")
@@ -125,6 +123,5 @@ struct AnisetteKitTests {
         #expect(restored.userAgent == "UA_TEST")
         #expect(restored.locale == "en_US")
         #expect(restored.timeZone == "UTC")
-        #expect(restored.rawHeaders["Custom-Key"] == "Custom-Val")
     }
 }

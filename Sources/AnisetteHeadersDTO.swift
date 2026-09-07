@@ -44,9 +44,6 @@ public struct AnisetteHeadersDTO: Sendable, Equatable {
         if let v = headers.timeZone        { dict[AnisetteConstants.Headers.timeZone]        = v }
         if let v = headers.contentType     { dict[AnisetteConstants.Headers.contentType]     = v }
         if let v = headers.accept          { dict[AnisetteConstants.Headers.accept]          = v }
-        for (k, v) in headers.additionalHeaders {
-            dict[k] = v
-        }
         self.dictionary = dict
         self.isCaseSensitive = false
     }

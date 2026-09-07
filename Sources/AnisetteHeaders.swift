@@ -23,7 +23,6 @@ public struct AnisetteHeaders: Sendable, Equatable {
     public var timeZone: String? = nil
     public var contentType: String? = nil
     public var accept: String? = nil
-    public var additionalHeaders: [String: String] = [:]
     public var rawHeaders: [String: String] = [:]
 
     public init() {}
