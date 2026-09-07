@@ -11,6 +11,7 @@ import anisette_core
 
 
 public protocol AnisetteDataProvider: Sendable {
+    var requiresLocalLibraries: Bool { get }
     func getAnisetteHeaders(libDir: String, provisioningDir: String, identifier: [UInt8], adiPb: [UInt8]) async throws -> AnisetteDataResponse
     func startProvision(libDir: String, provisioningDir: String, identifier: [UInt8], spim: [UInt8]) async throws -> (cpim: Data, session: UInt32)
     func endProvision(libDir: String, provisioningDir: String, identifier: [UInt8], session: UInt32, ptm: [UInt8], tk: [UInt8]) async throws -> Data
@@ -27,11 +28,7 @@ extension AnisetteDataProvider {
         if let err = dict["error"] {
             throw AnisetteError.adiError(code: code, description: err)
         }
-        guard let otp = dict[AnisetteConstants.Headers.oneTimePassword] ?? dict["one_time_password"] ?? dict["otp"] ?? dict["X-Apple-I-MD"],
-              let mid = dict[AnisetteConstants.Headers.machineID] ?? dict["machine_id"] ?? dict["mid"] ?? dict["X-Apple-I-MD-M"] else {
-            throw AnisetteError.invalidResponse(reason: "Missing oneTimePassword or machineID from \(providerName) headers response")
-        }
-        return AnisetteDataResponse(oneTimePassword: otp, machineID: mid)
+        return try AnisetteDataResponse(from: dict)
     }
 
     func parseStartProvisionResponse(code: Int32, outPtr: CStringPointer?, providerName: String) throws -> (cpim: Data, session: UInt32) {
@@ -75,6 +72,8 @@ extension AnisetteDataProvider {
 }
 
 public struct UnicornAnisetteDataProvider: AnisetteDataProvider {
+    public var requiresLocalLibraries: Bool { true }
+
     public init() {}
 
     public func getAnisetteHeaders(libDir: String, provisioningDir: String, identifier: [UInt8], adiPb: [UInt8]) throws -> AnisetteDataResponse {
@@ -101,6 +100,8 @@ public struct UnicornAnisetteDataProvider: AnisetteDataProvider {
 
 #if os(macOS)
 public struct NativeAnisetteDataProvider: AnisetteDataProvider {
+    public var requiresLocalLibraries: Bool { true }
+
     public init() {}
 
     public func getAnisetteHeaders(libDir: String, provisioningDir: String, identifier: [UInt8], adiPb: [UInt8]) throws -> AnisetteDataResponse {

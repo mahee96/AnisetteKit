@@ -16,4 +16,14 @@ public struct AnisetteDataResponse: Sendable, Codable, Equatable, Hashable {
         self.oneTimePassword = oneTimePassword
         self.machineID = machineID
     }
+
+    public init(from dictionary: [String: String]) throws {
+        guard let otp = dictionary[AnisetteConstants.Headers.oneTimePassword],
+              let mid = dictionary[AnisetteConstants.Headers.machineID] else 
+        {
+            throw AnisetteError.invalidResponse(reason: "Missing \(AnisetteConstants.Headers.oneTimePassword) or \(AnisetteConstants.Headers.machineID) from response")
+        }
+        self.oneTimePassword = otp
+        self.machineID = mid
+    }
 }

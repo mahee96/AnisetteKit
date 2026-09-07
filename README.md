@@ -37,34 +37,34 @@ A high-performance, on-device Anisette Data generator and ADI emulation library 
 
 ## Public API Reference
 
-### `AnisetteClient`
+### `AnisetteClient` & `AnisetteClientProtocol`
 
-#### `init(provisioningDir:clientInfo:libraryDirectoryResolver:) throws`
-* **When to use**: Initializes the client, resolves the `.so` directory via closure, and validates required binaries.
+#### `init(provisioningDir:clientInfo:provider:libraryDirectoryResolver:) throws`
+* **When to use**: Initializes the client, attaches a provider, and conditionally resolves/validates the `.so` directory via closure for providers that require local binaries.
 * **Parameters**:
   * `provisioningDir`: Directory `URL` where persistent device provisioning state (`adi.pb`) is saved.
   * `clientInfo`: Apple client identification string (defaults to `AnisetteConstants.defaultClientInfo`).
-  * `libraryDirectoryResolver`: Closure returning the directory `URL` containing required `.so` binaries.
+  * `provider`: Optional `any AnisetteDataProvider` (defaults to `NativeAnisetteDataProvider` on macOS, `UnicornAnisetteDataProvider` on other platforms).
+  * `libraryDirectoryResolver`: Optional closure returning the directory `URL` containing required `.so` binaries (required when local providers are used).
 
 #### `validateLibrariesExist(at:) -> Bool`
 * **When to use**: Pre-flight validation before initialization to verify `libstoreservicescore.so` and `libCoreADI.so` exist in the specified directory `URL`.
 * **Parameters**:
   * `directory`: Filesystem `URL` to inspect.
 
-#### `getAnisetteData(identifier:storage:headers:provider:) async throws -> (headers: [String: String], newBlob: Data?)`
-* **When to use**: Core entrypoint for Anisette header generation with configurable provisioning storage, headers, and provider.
+#### `getAnisetteData(identifier:storage:headers:) async throws -> (headers: [String: String], newBlob: Data?)`
+* **When to use**: Core entrypoint for Anisette header generation with configurable provisioning storage and request headers.
 * **Parameters**:
   * `identifier`: Persistent device `UUID`.
   * `storage`: `.disk` (default) or `.memory(existingBlob:)`.
   * `headers`: Optional `AnisetteRequestHeaders` object to customize client/device metadata.
-  * `provider`: Optional `any AnisetteDataProvider` (defaults to `NativeAnisetteDataProvider` on macOS, `UnicornAnisetteDataProvider` on other platforms; can pass `RemoteAnisetteDataProvider` or `UnicornAnisetteDataProvider`).
 * **Returns**: Tuple `(headers: [String: String], newBlob: Data?)` containing generated headers and newly provisioned blob if created.
 
 ---
 
 ### Low-Level Data Provider Protocol (`AnisetteDataProvider`)
 
-* **`AnisetteDataProvider`**: Public protocol for ADI data providers (`getAnisetteHeaders`, `startProvision`, `endProvision`).
+* **`AnisetteDataProvider`**: Public protocol for ADI data providers (`requiresLocalLibraries`, `getAnisetteHeaders`, `startProvision`, `endProvision`).
 * **`UnicornAnisetteDataProvider`**: Pure C Unicorn TCI emulation provider (available on all platforms).
 * **`NativeAnisetteDataProvider`**: Direct host memory-mapped AArch64 execution provider (macOS only).
 
@@ -72,8 +72,9 @@ A high-performance, on-device Anisette Data generator and ADI emulation library 
 
 ### Types & Constants
 
-* **`LibraryDirectoryResolver`**: `() throws -> URL` closure type for supplying runtime `.so` directory.
-* **`AnisetteHeaders`**: Structure representing Anisette headers with full parameter customizability and fluent `.with { ... }` support.
+* **`LibraryDirectoryResolver`**: `@Sendable () throws -> URL` closure type for supplying runtime `.so` directory.
+* **`AnisetteRequestHeaders`**: Structure representing Anisette request headers with full parameter customizability and fluent `.with { ... }` support.
+* **`AnisetteDataResponse`**: Structure holding cryptographic output response headers (`oneTimePassword`, `machineID`).
 * **`AnisetteError`**: Strongly-typed errors (`librariesNotFound`, `loaderFailed`, `symbolMissing`, `adiError`, `invalidArgument`, `httpError`, `invalidResponse`).
 * **`AnisetteConstants`**: Contains default headers, routing code (`17106176`), URLs, and required binary names (`AnisetteConstants.Libraries.requiredNames`).
 

@@ -14,14 +14,36 @@ public enum ProvisioningStorage: Equatable, Sendable {
     case memory(existingBlob: Data? = nil)
 }
 
-public typealias LibraryDirectoryResolver = () throws -> URL
+public protocol AnisetteClientProtocol: Sendable {
+    func getAnisetteData(
+        identifier: UUID,
+        storage: ProvisioningStorage,
+        headers customHeaders: AnisetteRequestHeaders?
+    ) async throws -> (headers: [String: String], newBlob: Data?)
+}
 
-public class AnisetteClient: @unchecked Sendable {
+public extension AnisetteClientProtocol {
+    func getAnisetteData(
+        identifier: UUID,
+        storage: ProvisioningStorage = .disk,
+        headers customHeaders: AnisetteRequestHeaders? = nil
+    ) async throws -> (headers: [String: String], newBlob: Data?) {
+        try await getAnisetteData(
+            identifier: identifier,
+            storage: storage,
+            headers: customHeaders
+        )
+    }
+}
+public typealias LibraryDirectoryResolver = @Sendable () throws -> URL
 
-    let libDir: URL
+public class AnisetteClient: AnisetteClientProtocol, @unchecked Sendable {
+
+    let libDir: URL?
     let provisioningDir: URL
     public let clientInfo: String
     let userAgent: String
+    public let provider: any AnisetteDataProvider
 
     let routingInfoLock = NSLock()
     var routingInfoCache = [UUID: String]()
@@ -29,24 +51,42 @@ public class AnisetteClient: @unchecked Sendable {
     public init(
         provisioningDir: URL,
         clientInfo: String = AnisetteConstants.defaultClientInfo,
-        libraryDirectoryResolver: LibraryDirectoryResolver
+        provider: (any AnisetteDataProvider)? = nil,
+        libraryDirectoryResolver: LibraryDirectoryResolver? = nil
     ) throws {
         self.provisioningDir = provisioningDir
         self.clientInfo = clientInfo
         self.userAgent = AnisetteConstants.defaultUserAgent
 
-        let resolvedDir = try libraryDirectoryResolver()
-        guard Self.validateLibrariesExist(at: resolvedDir) else {
-            let bulletedLibs = AnisetteConstants.Libraries.requiredNames.map { "  • \($0)" }.joined(separator: "\n")
-            throw AnisetteError.librariesNotFound(
-                reason: """
-                Required ADI shared libraries could not be found at: \(resolvedDir.path)
-                \(bulletedLibs)
-                """
-            )
-        }
+        let resolvedProvider: any AnisetteDataProvider = provider ?? {
+            #if os(macOS)
+            return NativeAnisetteDataProvider()
+            #else
+            return UnicornAnisetteDataProvider()
+            #endif
+        }()
+        self.provider = resolvedProvider
 
-        self.libDir = resolvedDir
+        if resolvedProvider.requiresLocalLibraries {
+            guard let resolver = libraryDirectoryResolver else {
+                throw AnisetteError.librariesNotFound(
+                    reason: "A libraryDirectoryResolver is required for \(type(of: resolvedProvider))."
+                )
+            }
+            let resolvedDir = try resolver()
+            guard Self.validateLibrariesExist(at: resolvedDir) else {
+                let bulletedLibs = AnisetteConstants.Libraries.requiredNames.map { "  • \($0)" }.joined(separator: "\n")
+                throw AnisetteError.librariesNotFound(
+                    reason: """
+                    Required ADI shared libraries could not be found at: \(resolvedDir.path)
+                    \(bulletedLibs)
+                    """
+                )
+            }
+            self.libDir = resolvedDir
+        } else {
+            self.libDir = try? libraryDirectoryResolver?()
+        }
     }
 
     public static func validateLibrariesExist(at directory: URL) -> Bool {
@@ -62,17 +102,9 @@ public class AnisetteClient: @unchecked Sendable {
     public func getAnisetteData(
         identifier: UUID,
         storage: ProvisioningStorage = .disk,
-        headers customHeaders: AnisetteRequestHeaders? = nil,
-        provider: (any AnisetteDataProvider)? = nil
+        headers customHeaders: AnisetteRequestHeaders? = nil
     ) async throws -> (headers: [String: String], newBlob: Data?) {
-        let resolvedProvider: any AnisetteDataProvider = provider ?? {
-            #if os(macOS)
-            return NativeAnisetteDataProvider()
-            #else
-            return UnicornAnisetteDataProvider()
-            #endif
-        }()
-        return try await fetchHeaders(identifier: identifier, storage: storage, customHeaders: customHeaders, provider: resolvedProvider)
+        try await fetchHeaders(identifier: identifier, storage: storage, customHeaders: customHeaders, provider: self.provider)
     }
 }
 
@@ -105,7 +137,7 @@ extension AnisetteClient {
         defer { cleanup() }
 
         let response = try await provider.getAnisetteHeaders(
-            libDir: libDir.path,
+            libDir: libDir?.path ?? "",
             provisioningDir: provisioningDir.path,
             identifier: identifier.uuidBytes,
             adiPb: [UInt8](adiPbData)
@@ -210,7 +242,7 @@ extension AnisetteClient {
         verboseLog("[AnisetteKit] Got SPIM (\(spim.count) bytes). Running local start_provision...")
 
         let provResult = try await provider.startProvision(
-            libDir: libDir.path,
+            libDir: libDir?.path ?? "",
             provisioningDir: provisioningDir.path,
             identifier: identifier.uuidBytes,
             spim: [UInt8](spim)
@@ -223,7 +255,7 @@ extension AnisetteClient {
         verboseLog("[AnisetteKit] Got PTM (\(ptm.count) bytes) and TK (\(tk.count) bytes). Running local end_provision...")
 
         let adiPb = try await provider.endProvision(
-            libDir: libDir.path,
+            libDir: libDir?.path ?? "",
             provisioningDir: provisioningDir.path,
             identifier: identifier.uuidBytes,
             session: provResult.session,

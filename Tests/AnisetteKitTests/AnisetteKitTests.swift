@@ -28,7 +28,8 @@ struct AnisetteKitTests {
             .appendingPathComponent("Resources/lib/arm64-v8a")
         let anisette = try AnisetteClient(
             provisioningDir: tempDir,
-            clientInfo: AnisetteConstants.defaultClientInfo
+            clientInfo: AnisetteConstants.defaultClientInfo,
+            provider: UnicornAnisetteDataProvider()
         ) {
             libURL
         }
@@ -44,7 +45,7 @@ struct AnisetteKitTests {
 
         print("[Test] 2. Testing UNICORN getAnisetteData on freshly provisioned adi.pb...")
         fflush(stdout)
-        let (headers, _) = try await anisette.getAnisetteData(identifier: identifier, provider: UnicornAnisetteDataProvider())
+        let (headers, _) = try await anisette.getAnisetteData(identifier: identifier)
         print("[Test] UNICORN GET HEADERS SUCCESS! Received Headers:")
         for (key, val) in headers {
             print("  \(key): \(val)")
