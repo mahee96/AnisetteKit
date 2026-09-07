@@ -69,7 +69,7 @@ public struct AnisetteHeadersDTO: Sendable, Equatable {
     }
 
     public static func toHeaders(isCaseSensitive: Bool = false, from dictionary: [String: String]) -> AnisetteHeaders {
-        AnisetteHeadersDTO(isCaseSensitive: isCaseSensitive, dictionary: dictionary).headers
+        AnisetteHeadersDTO(dictionary: dictionary, isCaseSensitive: isCaseSensitive).headers
     }
 }
 
