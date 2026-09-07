@@ -41,9 +41,7 @@ let package = Package(
             targets: ["AnisetteKit"]
         )
     ],
-    dependencies: [
-        .package(url: "https://github.com/apple/swift-crypto.git", exact: "4.3.1"),
-    ],
+    dependencies: [],
     targets: [
         .target(
             name: "anisette_core",
@@ -57,8 +55,7 @@ let package = Package(
         .target(
             name: "AnisetteKit",
             dependencies: [
-                "anisette_core",
-                .product(name: "Crypto", package: "swift-crypto")
+                "anisette_core"
             ],
             path: ".",
             exclude: [
