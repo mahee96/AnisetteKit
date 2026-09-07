@@ -7,7 +7,6 @@
 //
 
 import Foundation
-import Crypto
 import anisette_core
 
 public enum ProvisioningStorage: Equatable, Sendable {
@@ -247,7 +246,7 @@ extension AnisetteClient {
     private func extractRoutingInfo(from response: URLResponse?, data: Data? = nil) -> String? {
         if let httpResp = response as? HTTPURLResponse {
             for (k, v) in httpResp.allHeaderFields {
-                if String(describing: k).caseInsensitiveCompare("X-Apple-I-MD-RINFO") == .orderedSame,
+                if String(describing: k).caseInsensitiveCompare(AnisetteConstants.Headers.routingInfo) == .orderedSame,
                    let str = v as? String, !str.isEmpty {
                     return str
                 }
@@ -256,7 +255,7 @@ extension AnisetteClient {
         if let data = data,
            let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any] {
             if let responseDict = plist["Response"] as? [String: Any] {
-                for key in ["routing-info", "X-Apple-I-MD-RINFO", "rinfo", "routingInfo"] {
+                for key in ["routing-info", AnisetteConstants.Headers.routingInfo, "rinfo", "routingInfo"] {
                     if let str = responseDict[key] as? String, !str.isEmpty {
                         return str
                     }
@@ -265,7 +264,7 @@ extension AnisetteClient {
                     }
                 }
             }
-            for key in ["routing-info", "X-Apple-I-MD-RINFO", "rinfo", "routingInfo"] {
+            for key in ["routing-info", AnisetteConstants.Headers.routingInfo, "rinfo", "routingInfo"] {
                 if let str = plist[key] as? String, !str.isEmpty {
                     return str
                 }
@@ -347,9 +346,5 @@ extension AnisetteClient {
         }
         verboseLog("[AnisetteKit] fetchPtmTk got ptm (\(ptm.count) bytes), tk (\(tk.count) bytes)")
         return (ptm, tk, discoveredRinfo)
-    }
-
-    private func CommonSHA256(data: Data) -> Data {
-        Data(SHA256.hash(data: data))
     }
 }
