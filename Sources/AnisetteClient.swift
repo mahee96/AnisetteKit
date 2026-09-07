@@ -59,7 +59,7 @@ public class AnisetteClient: @unchecked Sendable {
         }
     }
 
-    public func getHeaders(
+    public func getAnisetteData(
         identifier: UUID,
         storage: ProvisioningStorage = .disk,
         headers customHeaders: AnisetteRequestHeaders? = nil,

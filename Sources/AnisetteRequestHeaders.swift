@@ -28,7 +28,7 @@ public struct AnisetteRequestHeaders: Sendable, Codable, Equatable, Hashable {
     public init() {}
 
     public init(rawHeaders: [String: String]) {
-        self = AnisetteHeadersDTO.toRequestHeaders(from: rawHeaders)
+        self = AnisetteHeadersDTO.toHeaders(from: rawHeaders)
     }
 
     public static var defaultHeaders: AnisetteRequestHeaders {

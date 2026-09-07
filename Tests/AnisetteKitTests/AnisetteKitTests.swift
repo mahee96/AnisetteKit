@@ -42,9 +42,9 @@ struct AnisetteKitTests {
 
         #expect(adiPbUC.count > 100, "Generated adi.pb size should be > 100 bytes")
 
-        print("[Test] 2. Testing UNICORN getHeaders on freshly provisioned adi.pb...")
+        print("[Test] 2. Testing UNICORN getAnisetteData on freshly provisioned adi.pb...")
         fflush(stdout)
-        let (headers, _) = try await anisette.getHeaders(identifier: identifier, provider: UnicornAnisetteDataProvider())
+        let (headers, _) = try await anisette.getAnisetteData(identifier: identifier, provider: UnicornAnisetteDataProvider())
         print("[Test] UNICORN GET HEADERS SUCCESS! Received Headers:")
         for (key, val) in headers {
             print("  \(key): \(val)")
@@ -86,8 +86,8 @@ struct AnisetteKitTests {
     }
 
     @Test
-    func anisetteHeaderResponseStructure() {
-        let resp = AnisetteHeaderResponse(oneTimePassword: "OTP", machineID: "MID")
+    func anisetteDataResponseStructure() {
+        let resp = AnisetteDataResponse(oneTimePassword: "OTP", machineID: "MID")
         #expect(resp.oneTimePassword == "OTP")
         #expect(resp.machineID == "MID")
     }

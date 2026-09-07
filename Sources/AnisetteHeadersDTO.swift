@@ -25,7 +25,7 @@ public struct AnisetteHeadersDTO: Sendable, Equatable {
         try? Date(dateString, strategy: .iso8601)
     }
 
-    public init(headers: AnisetteRequestHeader) {
+    public init(headers: AnisetteRequestHeaders) {
         var dict = [String: String]()
         if let v = headers.machineID       { dict[AnisetteConstants.Headers.machineID]       = v }
         if let v = headers.oneTimePassword { dict[AnisetteConstants.Headers.oneTimePassword] = v }
@@ -48,8 +48,8 @@ public struct AnisetteHeadersDTO: Sendable, Equatable {
         self.isCaseSensitive = false
     }
 
-    public var headers: AnisetteRequestHeader {
-        var h = AnisetteRequestHeader()
+    public var headers: AnisetteRequestHeaders {
+        var h = AnisetteRequestHeaders()
         h.machineID       = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.machineID]
         h.oneTimePassword = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.oneTimePassword]
         h.localUserID     = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.localUserID]
@@ -69,16 +69,14 @@ public struct AnisetteHeadersDTO: Sendable, Equatable {
         return h
     }
 
-    public static func toDictionary(from headers: AnisetteRequestHeader) -> [String: String] {
+    public static func toDictionary(from headers: AnisetteRequestHeaders) -> [String: String] {
         AnisetteHeadersDTO(headers: headers).dictionary
     }
 
-    public static func toHeaders(isCaseSensitive: Bool = false, from dictionary: [String: String]) -> AnisetteRequestHeader {
+    public static func toHeaders(isCaseSensitive: Bool = false, from dictionary: [String: String]) -> AnisetteRequestHeaders {
         AnisetteHeadersDTO(dictionary: dictionary, isCaseSensitive: isCaseSensitive).headers
     }
 }
-
-public typealias AnisetteRequestHeaderDTO = AnisetteHeadersDTO
 
 private extension Dictionary where Key == String, Value == String {
     subscript(caseSensitive caseSensitive: Bool = false, _ key: String) -> String? {
