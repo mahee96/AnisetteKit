@@ -288,24 +288,13 @@ extension AnisetteClient {
             }
         }
         if let data = data,
-           let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any] {
-            if let responseDict = plist["Response"] as? [String: Any] {
-                for key in ["routing-info", AnisetteConstants.Headers.routingInfo, "rinfo", "routingInfo"] {
-                    if let str = responseDict[key] as? String, !str.isEmpty {
-                        return str
-                    }
-                    if let num = responseDict[key] as? NSNumber {
-                        return num.stringValue
-                    }
-                }
+           let plist = try? PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any],
+           let responseDict = plist["Response"] as? [String: Any] {
+            if let str = responseDict["routing-info"] as? String, !str.isEmpty {
+                return str
             }
-            for key in ["routing-info", AnisetteConstants.Headers.routingInfo, "rinfo", "routingInfo"] {
-                if let str = plist[key] as? String, !str.isEmpty {
-                    return str
-                }
-                if let num = plist[key] as? NSNumber {
-                    return num.stringValue
-                }
+            if let num = responseDict["routing-info"] as? NSNumber {
+                return num.stringValue
             }
         }
         return nil
