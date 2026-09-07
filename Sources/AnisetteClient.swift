@@ -27,16 +27,6 @@ public class AnisetteClient: @unchecked Sendable {
     let routingInfoLock = NSLock()
     var routingInfoCache = [UUID: String]()
 
-    static let dateFormatterLock = NSLock()
-    static let dateFormatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.locale = Locale(identifier: AnisetteConstants.posixLocaleIdentifier)
-        formatter.calendar = Calendar(identifier: .gregorian)
-        formatter.timeZone = TimeZone(identifier: AnisetteConstants.defaultTimeZone)
-        formatter.dateFormat = AnisetteConstants.iso8601DateFormat
-        return formatter
-    }()
-
     public init(
         provisioningDir: URL,
         clientInfo: String = AnisetteConstants.defaultClientInfo,
@@ -72,67 +62,22 @@ public class AnisetteClient: @unchecked Sendable {
 
     public func getHeaders(
         identifier: UUID,
-        headers: AnisetteHeaders? = nil
-    ) async throws -> [String: String] {
-        try await getHeaders(identifier: identifier, storage: .disk, headers: headers).headers
-    }
-
-    public func getHeaders(
-        identifier: UUID,
         storage: ProvisioningStorage = .disk,
-        headers customHeaders: AnisetteHeaders? = nil
+        headers customHeaders: AnisetteHeaders? = nil,
+        provider: (any AnisetteDataProvider)? = nil
     ) async throws -> (headers: [String: String], newBlob: Data?) {
-        #if os(macOS)
-        return try await fetchHeaders(identifier: identifier, storage: storage, customHeaders: customHeaders, provider: NativeAnisetteDataProvider())
-        #else
-        return try await getHeadersUC(identifier: identifier, storage: storage, headers: customHeaders)
-        #endif
-    }
-
-    public func getHeadersUC(
-        identifier: UUID,
-        headers: AnisetteHeaders? = nil
-    ) async throws -> [String: String] {
-        try await getHeadersUC(identifier: identifier, storage: .disk, headers: headers).headers
-    }
-
-    public func getHeadersUC(
-        identifier: UUID,
-        storage: ProvisioningStorage = .disk,
-        headers customHeaders: AnisetteHeaders? = nil
-    ) async throws -> (headers: [String: String], newBlob: Data?) {
-        try await fetchHeaders(identifier: identifier, storage: storage, customHeaders: customHeaders, provider: UnicornAnisetteDataProvider())
+        let resolvedProvider: any AnisetteDataProvider = provider ?? {
+            #if os(macOS)
+            return NativeAnisetteDataProvider()
+            #else
+            return UnicornAnisetteDataProvider()
+            #endif
+        }()
+        return try await fetchHeaders(identifier: identifier, storage: storage, customHeaders: customHeaders, provider: resolvedProvider)
     }
 }
 
 extension AnisetteClient {
-    static func sanitizeTimeZone(_ timeZoneString: String) -> String {
-        let trimmed = timeZoneString.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty || trimmed.contains("+") || trimmed.contains("-") || trimmed.contains(":") || trimmed.count > 5 {
-            return AnisetteConstants.defaultTimeZone
-        }
-        return trimmed
-    }
-
-    static func sanitizeTimeZone(for timeZone: TimeZone, date: Date = Date()) -> String {
-        guard let abbr = timeZone.abbreviation(for: date), !abbr.isEmpty else {
-            return AnisetteConstants.defaultTimeZone
-        }
-        return sanitizeTimeZone(abbr)
-    }
-
-    static func formatISO8601Date(_ date: Date) -> String {
-        dateFormatterLock.withLock {
-            dateFormatter.string(from: date)
-        }
-    }
-
-    static func parseISO8601Date(_ dateString: String) -> Date? {
-        dateFormatterLock.withLock {
-            dateFormatter.date(from: dateString)
-        }
-    }
-
     private func getCachedRoutingInfo(for identifier: UUID) -> String? {
         routingInfoLock.withLock {
             routingInfoCache[identifier]
@@ -244,11 +189,9 @@ extension AnisetteClient {
     ) async throws -> Data {
         verboseLog("[AnisetteKit] Fetching provisioning URLs from Apple lookup...")
         let lookupURL = URL(string: AnisetteConstants.URLs.grandSlamLookup)!
-        let lookupReq = createRequest(url: lookupURL, identifier: identifier, httpMethod: "GET", headers: customHeaders)
+        let lookupReq = createRequest(url: lookupURL, identifier: identifier, httpMethod: "GET", routingInfo: nil, headers: customHeaders)
 
-        let (lookupData, lookupResp) = try await URLSession.shared.data(for: lookupReq)
-        verboseLog("[AnisetteKit] Lookup HTTP status: \((lookupResp as? HTTPURLResponse)?.statusCode ?? -1)")
-
+        let (lookupData, lookupResp) = try await sendRequest(lookupReq, step: "Lookup", endpointName: "Apple lookup")
         var activeRoutingInfo = extractRoutingInfo(from: lookupResp, data: lookupData) ?? customHeaders?.routingInfo
 
         guard let plist = try PropertyListSerialization.propertyList(from: lookupData, options: [], format: nil) as? [String: Any],
@@ -334,12 +277,22 @@ extension AnisetteClient {
         return nil
     }
 
+    private func sendRequest(_ req: URLRequest, step: String, endpointName: String) async throws -> (data: Data, response: URLResponse) {
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        let statusCode = (resp as? HTTPURLResponse)?.statusCode ?? -1
+        verboseLog("[AnisetteKit] \(step) HTTP status: \(statusCode)")
+        guard statusCode == 200 else {
+            throw AnisetteError.httpError(statusCode: statusCode, message: "\(endpointName) endpoint returned HTTP \(statusCode)")
+        }
+        return (data, resp)
+    }
+
     private func createRequest(
         url: URL,
         identifier: UUID,
-        routingInfo: String? = nil,
-        httpMethod: String = "POST",
-        headers customHeaders: AnisetteHeaders? = nil
+        httpMethod: String,
+        routingInfo: String?,
+        headers customHeaders: AnisetteHeaders?
     ) -> URLRequest {
         var req = URLRequest(url: url)
         req.httpMethod = httpMethod
@@ -358,16 +311,10 @@ extension AnisetteClient {
     }
 
     private func fetchSpim(startURL: URL, identifier: UUID, routingInfo: String? = nil, headers customHeaders: AnisetteHeaders? = nil) async throws -> (spim: Data, routingInfo: String?) {
-        var req = createRequest(url: startURL, identifier: identifier, routingInfo: routingInfo, httpMethod: "POST", headers: customHeaders)
+        var req = createRequest(url: startURL, identifier: identifier, httpMethod: "POST", routingInfo: routingInfo, headers: customHeaders)
         req.httpBody = try? PropertyListSerialization.data(fromPropertyList: ["Header": [:], "Request": [:]] as [String: Any], format: .xml, options: 0)
 
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        let statusCode = (resp as? HTTPURLResponse)?.statusCode ?? -1
-        verboseLog("[AnisetteKit] fetchSpim HTTP status: \(statusCode)")
-        if statusCode != 200 {
-            throw AnisetteError.httpError(statusCode: statusCode, message: "Apple SPIM endpoint returned HTTP \(statusCode)")
-        }
-
+        let (data, resp) = try await sendRequest(req, step: "fetchSpim", endpointName: "Apple SPIM")
         let discoveredRinfo = extractRoutingInfo(from: resp, data: data)
 
         guard let plist = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any],
@@ -382,17 +329,11 @@ extension AnisetteClient {
     }
 
     private func fetchPtmTk(endURL: URL, cpim: Data, identifier: UUID, routingInfo: String? = nil, headers customHeaders: AnisetteHeaders? = nil) async throws -> (ptm: Data, tk: Data, routingInfo: String?) {
-        var req = createRequest(url: endURL, identifier: identifier, routingInfo: routingInfo, httpMethod: "POST", headers: customHeaders)
+        var req = createRequest(url: endURL, identifier: identifier, httpMethod: "POST", routingInfo: routingInfo, headers: customHeaders)
         req.httpBody = try? PropertyListSerialization.data(fromPropertyList: ["Header": [:], "Request": ["cpim": cpim.base64EncodedString()]] as [String: Any], format: .xml, options: 0)
 
         verboseLog("[AnisetteKit] fetchPtmTk posting cpim to Apple...")
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        let statusCode = (resp as? HTTPURLResponse)?.statusCode ?? -1
-        verboseLog("[AnisetteKit] fetchPtmTk HTTP status: \(statusCode)")
-        if statusCode != 200 {
-            throw AnisetteError.httpError(statusCode: statusCode, message: "Apple PTM/TK endpoint returned HTTP \(statusCode)")
-        }
-
+        let (data, resp) = try await sendRequest(req, step: "fetchPtmTk", endpointName: "Apple PTM/TK")
         let discoveredRinfo = extractRoutingInfo(from: resp, data: data)
 
         guard let plist = try PropertyListSerialization.propertyList(from: data, options: [], format: nil) as? [String: Any],

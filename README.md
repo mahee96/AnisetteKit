@@ -51,17 +51,14 @@ A high-performance, on-device Anisette Data generator and ADI emulation library 
 * **Parameters**:
   * `directory`: Filesystem `URL` to inspect.
 
-#### `getHeaders(identifier:) async throws -> [String: String]`
-* **When to use**: Standard production header generation (Native on macOS, Unicorn TCI on iOS/tvOS/visionOS).
+#### `getHeaders(identifier:storage:headers:provider:) async throws -> (headers: [String: String], newBlob: Data?)`
+* **When to use**: Core entrypoint for Anisette header generation with configurable provisioning storage, headers, and provider.
 * **Parameters**:
   * `identifier`: Persistent device `UUID`.
-* **Returns**: Dictionary containing all required Anisette HTTP headers.
-
-#### `getHeadersUC(identifier:) async throws -> [String: String]`
-* **When to use**: Explicitly forces Unicorn TCI CPU emulation on all platforms (diagnostics, testing, or benchmarking).
-* **Parameters**:
-  * `identifier`: Persistent device `UUID`.
-* **Returns**: Dictionary containing all required Anisette HTTP headers.
+  * `storage`: `.disk` (default) or `.memory(existingBlob:)`.
+  * `headers`: Optional `AnisetteHeaders` object to customize client/device metadata.
+  * `provider`: Optional `any AnisetteDataProvider` (defaults to `NativeAnisetteDataProvider` on macOS, `UnicornAnisetteDataProvider` on other platforms; can pass `RemoteAnisetteDataProvider` or `UnicornAnisetteDataProvider`).
+* **Returns**: Tuple `(headers: [String: String], newBlob: Data?)` containing generated headers and newly provisioned blob if created.
 
 ---
 

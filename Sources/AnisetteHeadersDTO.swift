@@ -17,6 +17,14 @@ public struct AnisetteHeadersDTO: Sendable, Equatable {
         self.isCaseSensitive = isCaseSensitive
     }
 
+    private static func formatISO8601Date(_ date: Date) -> String {
+        date.formatted(.iso8601)
+    }
+
+    private static func parseISO8601Date(_ dateString: String) -> Date? {
+        try? Date(dateString, strategy: .iso8601)
+    }
+
     public init(headers: AnisetteHeaders) {
         var dict = [String: String]()
         if let v = headers.machineID       { dict[AnisetteConstants.Headers.machineID]       = v }
@@ -30,7 +38,7 @@ public struct AnisetteHeadersDTO: Sendable, Equatable {
         if let v = headers.clientTime {
             dict[AnisetteConstants.Headers.clientTime] = v
         } else if let d = headers.date {
-            dict[AnisetteConstants.Headers.clientTime] = AnisetteClient.formatISO8601Date(d)
+            dict[AnisetteConstants.Headers.clientTime] = Self.formatISO8601Date(d)
         }
         if let v = headers.locale          { dict[AnisetteConstants.Headers.locale]          = v }
         if let v = headers.timeZone        { dict[AnisetteConstants.Headers.timeZone]        = v }
@@ -54,7 +62,7 @@ public struct AnisetteHeadersDTO: Sendable, Equatable {
         h.clientInfo      = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.clientInfo]
         h.userAgent       = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.userAgent]
         let timeStr       = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.clientTime]
-        h.date            = timeStr.flatMap(AnisetteClient.parseISO8601Date)
+        h.date            = timeStr.flatMap(Self.parseISO8601Date)
         h.clientTime      = timeStr
         h.locale          = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.locale]
         h.timeZone        = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.timeZone]

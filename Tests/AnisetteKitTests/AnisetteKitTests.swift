@@ -42,9 +42,9 @@ struct AnisetteKitTests {
 
         #expect(adiPbUC.count > 100, "Generated adi.pb size should be > 100 bytes")
 
-        print("[Test] 2. Testing UNICORN getHeadersUC on freshly provisioned adi.pb...")
+        print("[Test] 2. Testing UNICORN getHeaders on freshly provisioned adi.pb...")
         fflush(stdout)
-        let headers = try await anisette.getHeadersUC(identifier: identifier)
+        let (headers, _) = try await anisette.getHeaders(identifier: identifier, provider: UnicornAnisetteDataProvider())
         print("[Test] UNICORN GET HEADERS SUCCESS! Received Headers:")
         for (key, val) in headers {
             print("  \(key): \(val)")

@@ -35,3 +35,13 @@ extension UUID {
         withUnsafeBytes(of: uuid) { Array($0) }
     }
 }
+
+public func safeTimeZoneAbbreviation(for timeZone: TimeZone, date: Date = Date()) -> String {
+    guard let abbr = timeZone.abbreviation(for: date), !abbr.isEmpty else {
+        return AnisetteConstants.defaultTimeZone
+    }
+    if abbr.contains("+") || abbr.contains("-") || abbr.contains(":") || abbr.count > 5 {
+        return AnisetteConstants.defaultTimeZone
+    }
+    return abbr
+}
