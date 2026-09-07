@@ -42,8 +42,11 @@ extension AnisetteDataProvider {
             throw AnisetteError.adiError(code: code, description: err)
         }
         guard let cpimBase64 = dict["cpim_base64"] as? String,
-              let session = dict["session"] as? UInt32,
-              let cpim = Data(base64Encoded: cpimBase64) else {
+              let cpim = Data(base64Encoded: cpimBase64),
+              let session = (dict["session"] as? NSNumber)?.uint32Value
+                         ?? (dict["session"] as? UInt32)
+                         ?? (dict["session"] as? Int).map(UInt32.init) else 
+        {
             throw AnisetteError.invalidResponse(reason: "Missing/invalid cpim_base64 or session")
         }
         return (cpim, session)
