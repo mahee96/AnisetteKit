@@ -7,6 +7,9 @@
 //
 
 import Foundation
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
 import anisette_core
 
 public enum ProvisioningStorage: Equatable, Sendable {
@@ -220,7 +223,7 @@ extension AnisetteClient {
     ) async throws -> Data {
         verboseLog("[AnisetteKit] Fetching provisioning URLs from Apple lookup...")
         let lookupURL = URL(string: AnisetteConstants.URLs.grandSlamLookup)!
-        let lookupReq = createRequest(url: lookupURL, identifier: identifier, httpMethod: "GET", routingInfo: nil, headers: customHeaders)
+        let lookupReq = createRequest(url: lookupURL, identifier: identifier, httpMethod: "GET", routingInfo: nil as String?, headers: customHeaders)
 
         let (lookupData, lookupResp) = try await sendRequest(lookupReq, step: "Lookup", endpointName: "Apple lookup")
         var activeRoutingInfo = extractRoutingInfo(from: lookupResp, data: lookupData) ?? customHeaders?.routingInfo
@@ -269,7 +272,7 @@ extension AnisetteClient {
             let uuidProvDir = provisioningDir.appendingPathComponent(identifier.uuidString.lowercased())
             try? FileManager.default.createDirectory(at: uuidProvDir, withIntermediateDirectories: true, attributes: nil)
             let rinfoURL = uuidProvDir.appendingPathComponent(AnisetteConstants.Files.rinfo)
-            try? finalRinfo.write(to: rinfoURL, atomically: true, encoding: .utf8)
+            try? finalRinfo.write(to: rinfoURL, atomically: true, encoding: String.Encoding.utf8)
         }
 
         return adiPb
