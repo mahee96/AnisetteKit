@@ -10,9 +10,11 @@ import Foundation
 
 public struct AnisetteHeadersDTO: Sendable, Equatable {
     public var dictionary: [String: String]
+    public var isCaseSensitive: Bool
 
-    public init(dictionary: [String: String] = [:]) {
+    public init(dictionary: [String: String] = [:], isCaseSensitive: Bool = false) {
         self.dictionary = dictionary
+        self.isCaseSensitive = isCaseSensitive
     }
 
     public init(headers: AnisetteHeaders) {
@@ -38,24 +40,26 @@ public struct AnisetteHeadersDTO: Sendable, Equatable {
             dict[k] = v
         }
         self.dictionary = dict
+        self.isCaseSensitive = false
     }
 
     public var headers: AnisetteHeaders {
         var h = AnisetteHeaders()
-        h.machineID       = dictionary[AnisetteConstants.Headers.machineID]
-        h.oneTimePassword = dictionary[AnisetteConstants.Headers.oneTimePassword]
-        h.localUserID     = dictionary[AnisetteConstants.Headers.localUserID]
-        h.routingInfo     = dictionary[AnisetteConstants.Headers.routingInfo]
-        h.deviceID        = dictionary[AnisetteConstants.Headers.deviceID]
-        h.serialNumber    = dictionary[AnisetteConstants.Headers.serialNumber]
-        h.clientInfo      = dictionary[AnisetteConstants.Headers.clientInfo]
-        h.userAgent       = dictionary[AnisetteConstants.Headers.userAgent]
-        h.date            = dictionary[AnisetteConstants.Headers.clientTime].flatMap(AnisetteClient.parseISO8601Date)
-        h.clientTime      = dictionary[AnisetteConstants.Headers.clientTime]
-        h.locale          = dictionary[AnisetteConstants.Headers.locale]
-        h.timeZone        = dictionary[AnisetteConstants.Headers.timeZone]
-        h.contentType     = dictionary[AnisetteConstants.Headers.contentType]
-        h.accept          = dictionary[AnisetteConstants.Headers.accept]
+        h.machineID       = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.machineID]
+        h.oneTimePassword = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.oneTimePassword]
+        h.localUserID     = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.localUserID]
+        h.routingInfo     = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.routingInfo]
+        h.deviceID        = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.deviceID]
+        h.serialNumber    = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.serialNumber]
+        h.clientInfo      = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.clientInfo]
+        h.userAgent       = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.userAgent]
+        let timeStr       = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.clientTime]
+        h.date            = timeStr.flatMap(AnisetteClient.parseISO8601Date)
+        h.clientTime      = timeStr
+        h.locale          = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.locale]
+        h.timeZone        = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.timeZone]
+        h.contentType     = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.contentType]
+        h.accept          = dictionary[caseSensitive: isCaseSensitive, AnisetteConstants.Headers.accept]
         h.rawHeaders      = dictionary
         return h
     }
@@ -64,7 +68,19 @@ public struct AnisetteHeadersDTO: Sendable, Equatable {
         AnisetteHeadersDTO(headers: headers).dictionary
     }
 
-    public static func toHeaders(from dictionary: [String: String]) -> AnisetteHeaders {
-        AnisetteHeadersDTO(dictionary: dictionary).headers
+    public static func toHeaders(isCaseSensitive: Bool = false, from dictionary: [String: String]) -> AnisetteHeaders {
+        AnisetteHeadersDTO(isCaseSensitive: isCaseSensitive, dictionary: dictionary).headers
+    }
+}
+
+private extension Dictionary where Key == String, Value == String {
+    subscript(caseSensitive caseSensitive: Bool = false, _ key: String) -> String? {
+        if caseSensitive {
+            return self[key]
+        }
+        if let exact = self[key] {
+            return exact
+        }
+        return first(where: { $0.key.caseInsensitiveCompare(key) == .orderedSame })?.value
     }
 }
