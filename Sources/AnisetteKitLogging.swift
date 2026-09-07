@@ -1,5 +1,5 @@
 //
-//  AnisetteLogging.swift
+//  AnisetteKitLogging.swift
 //  AnisetteKit
 //
 //  Created by Magesh K on 17/08/26.
@@ -8,16 +8,16 @@
 
 import Foundation
 
-public enum AnisetteLogging {
+public enum AnisetteKitLogging {
     private static let lock = NSLock()
-    private nonisolated(unsafe) static var _isLoggingEnabled: Bool = false
+    private nonisolated(unsafe) static var isEnabled: Bool = false
 
     public static var isLoggingEnabled: Bool {
-        lock.withLock { _isLoggingEnabled }
+        lock.withLock { isEnabled }
     }
 
     public static func setLogging(_ enabled: Bool) {
-        lock.withLock { _isLoggingEnabled = enabled }
+        lock.withLock { isEnabled = enabled }
     }
 }
 
@@ -47,7 +47,7 @@ public func debugLog(_ text: @autoclosure () -> String) {
 }
 
 public func verboseLog(_ text: @autoclosure () -> String) {
-    if AnisetteLogging.isLoggingEnabled {
+    if AnisetteKitLogging.isLoggingEnabled {
         let message = formatLogMessage(text())
         if !message.isEmpty && message.allSatisfy({ $0 == "\n" || $0 == "\r" }) {
             print(message, terminator: "")

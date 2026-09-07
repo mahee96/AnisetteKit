@@ -37,13 +37,13 @@ A high-performance, on-device Anisette Data generator and ADI emulation library 
 
 ## Public API Reference
 
-### `LocalAnisetteProvider`
+### `AnisetteClient`
 
 #### `init(provisioningDir:clientInfo:libraryDirectoryResolver:) throws`
-* **When to use**: Initializes the provider, resolves the `.so` directory via closure, and validates required binaries.
+* **When to use**: Initializes the client, resolves the `.so` directory via closure, and validates required binaries.
 * **Parameters**:
   * `provisioningDir`: Directory `URL` where persistent device provisioning state (`adi.pb`) is saved.
-  * `clientInfo`: Apple client identification string (defaults to `defaultClientInfo`).
+  * `clientInfo`: Apple client identification string (defaults to `AnisetteConstants.defaultClientInfo`).
   * `libraryDirectoryResolver`: Closure returning the directory `URL` containing required `.so` binaries.
 
 #### `validateLibrariesExist(at:) -> Bool`
@@ -65,15 +65,20 @@ A high-performance, on-device Anisette Data generator and ADI emulation library 
 
 ---
 
+### Low-Level Data Provider Protocol (`AnisetteDataProvider`)
+
+* **`AnisetteDataProvider`**: Public protocol for ADI data providers (`getAnisetteHeaders`, `startProvision`, `endProvision`).
+* **`UnicornAnisetteDataProvider`**: Pure C Unicorn TCI emulation provider (available on all platforms).
+* **`NativeAnisetteDataProvider`**: Direct host memory-mapped AArch64 execution provider (macOS only).
+
+---
+
 ### Types & Constants
 
 * **`LibraryDirectoryResolver`**: `() throws -> URL` closure type for supplying runtime `.so` directory.
-* **`LocalAnisetteHeaders`**: Structure containing decoded headers (`machineID`, `oneTimePassword`, `routingInfo`, `date`).
-* **`LocalAnisetteError`**: Typed errors (`librariesNotFound`, `loaderFailed`, `symbolMissing`, `adiError`, `invalidArgument`).
-* **`requiredLibraryNames`**: `["libstoreservicescore.so", "libCoreADI.so"]`.
-* **`defaultClientInfo`**: Default client identification string for Apple GrandSlam services.
-* **`defaultRoutingInfo`**: Default routing identifier (`"17106176"`).
-* **`defaultLocalUserID`**: Default local user ID representation.
+* **`AnisetteHeaders`**: Structure representing Anisette headers with full parameter customizability and fluent `.with { ... }` support.
+* **`AnisetteError`**: Strongly-typed errors (`librariesNotFound`, `loaderFailed`, `symbolMissing`, `adiError`, `invalidArgument`, `httpError`, `invalidResponse`).
+* **`AnisetteConstants`**: Contains default headers, routing code (`17106176`), URLs, and required binary names (`AnisetteConstants.Libraries.requiredNames`).
 
 ---
 
