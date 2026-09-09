@@ -12,6 +12,7 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <sys/stat.h>
+#include "anisette_core.h"
 
 #ifdef st_atime
 #undef st_atime

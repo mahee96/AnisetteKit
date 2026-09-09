@@ -11,10 +11,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 
 const ADISymbols kADISymbols;
 
+static int g_anisette_logging_enabled = 0;
+
 extern "C" {
+
+void anisetteCoreSetLogging(int enabled) {
+    g_anisette_logging_enabled = enabled;
+}
+
+int anisetteCoreIsLoggingEnabled(void) {
+    return g_anisette_logging_enabled;
+}
+
+void anisetteCoreLog(const char* fmt, ...) {
+    if (!g_anisette_logging_enabled) return;
+    va_list args;
+    va_start(args, fmt);
+    vprintf(fmt, args);
+    va_end(args);
+    fflush(stdout);
+}
 
 const char* get_anisette_error_description(int32_t code) {
     switch (code) {

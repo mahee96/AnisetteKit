@@ -28,7 +28,7 @@
 #include <unicorn/unicorn.h>
 #include "anisette_base.h"
 
-#define LOG_UC(...) do { printf(__VA_ARGS__); fflush(stdout); } while(0)
+#define LOG_UC(...) anisetteCoreLog(__VA_ARGS__)
 
 static const uint64_t kReturnAddress = 0xDEAD0000;
 static const uint64_t kHeapAddress   = 0x48000000;

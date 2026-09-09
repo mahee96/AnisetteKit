@@ -22,7 +22,7 @@
 
 #include <stdio.h>
 
-#define LOG(...) do { printf(__VA_ARGS__); fflush(stdout); } while(0)
+#define LOG(...) anisetteCoreLog(__VA_ARGS__)
 
 class ElfLoader {
 public:

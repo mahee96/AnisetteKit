@@ -124,6 +124,11 @@ int32_t cancel_provision_uc(
     uint32_t session
 );
 
+// logging methods
+void anisetteCoreSetLogging(int enabled);
+int  anisetteCoreIsLoggingEnabled(void);
+void anisetteCoreLog(const char *fmt, ...);
+
 #ifdef __cplusplus
 }
 #endif

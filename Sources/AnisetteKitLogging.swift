@@ -7,6 +7,7 @@
 //
 
 import Foundation
+import anisette_core
 
 public enum AnisetteKitLogging {
     private static let lock = NSLock()
@@ -18,6 +19,7 @@ public enum AnisetteKitLogging {
 
     public static func setLogging(_ enabled: Bool) {
         lock.withLock { isEnabled = enabled }
+        anisetteCoreSetLogging(enabled ? 1 : 0)
     }
 }
 
