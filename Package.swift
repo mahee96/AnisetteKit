@@ -13,7 +13,7 @@ import PackageDescription
 let unicornBinaryTargets: [Target] = [
     .binaryTarget(
         name: "Unicorn",
-        url: "https://github.com/mahee96/unicorn/releases/download/2.1.4-multiarch/Unicorn.xcframework.zip",
+        url: "https://github.com/mahee96/unicorn/releases/download/2.1.4-multiarch/Unicorn.xcframework.zip#AnisetteKit",
         checksum: "4f61907db6aafc56fb3e336b524d742342312f498bb40739f1da55fb4a24614a"
     )
 ]
