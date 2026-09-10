@@ -45,7 +45,9 @@ public class AnisetteClient: AnisetteClientProtocol, @unchecked Sendable {
     let libDir: URL?
     let provisioningDir: URL
     public let clientInfo: String
-    let userAgent: String
+    public let userAgent: String
+    public let lookupURL: URL
+    public let requiredLibraries: [String]
     public let provider: any AnisetteDataProvider
 
     let routingInfoLock = NSLock()
@@ -54,12 +56,17 @@ public class AnisetteClient: AnisetteClientProtocol, @unchecked Sendable {
     public init(
         provisioningDir: URL,
         clientInfo: String = AnisetteConstants.defaultClientInfo,
+        userAgent: String = AnisetteConstants.defaultUserAgent,
+        lookupURL: URL = AnisetteConstants.URLs.grandSlamLookup,
+        requiredLibraries: [String] = AnisetteConstants.Libraries.requiredNames,
         provider: (any AnisetteDataProvider)? = nil,
         libraryDirectoryResolver: LibraryDirectoryResolver? = nil
     ) throws {
         self.provisioningDir = provisioningDir
         self.clientInfo = clientInfo
-        self.userAgent = AnisetteConstants.defaultUserAgent
+        self.userAgent = userAgent
+        self.lookupURL = lookupURL
+        self.requiredLibraries = requiredLibraries
 
         let resolvedProvider: any AnisetteDataProvider = provider ?? {
             #if os(macOS)
@@ -77,8 +84,8 @@ public class AnisetteClient: AnisetteClientProtocol, @unchecked Sendable {
                 )
             }
             let resolvedDir = try resolver()
-            guard Self.validateLibrariesExist(at: resolvedDir) else {
-                let bulletedLibs = AnisetteConstants.Libraries.requiredNames.map { "  • \($0)" }.joined(separator: "\n")
+            guard Self.validateLibrariesExist(at: resolvedDir, requiredLibraries: requiredLibraries) else {
+                let bulletedLibs = requiredLibraries.map { "  • \($0)" }.joined(separator: "\n")
                 throw AnisetteError.librariesNotFound(
                     reason: """
                     Required ADI shared libraries could not be found at: \(resolvedDir.path)
@@ -92,12 +99,12 @@ public class AnisetteClient: AnisetteClientProtocol, @unchecked Sendable {
         }
     }
 
-    public static func validateLibrariesExist(at directory: URL) -> Bool {
+    public static func validateLibrariesExist(at directory: URL, requiredLibraries: [String] = AnisetteConstants.Libraries.requiredNames) -> Bool {
         guard let isDir = (try? directory.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory, isDir else {
             return false
         }
         let fm = FileManager.default
-        return AnisetteConstants.Libraries.requiredNames.allSatisfy { libName in
+        return requiredLibraries.allSatisfy { libName in
             fm.fileExists(atPath: directory.appendingPathComponent(libName).path)
         }
     }
@@ -154,6 +161,8 @@ extension AnisetteClient {
                 if $0.deviceID == nil { $0.deviceID = identifier.uuidString.uppercased() }
                 if let storedRinfo = getStoredRoutingInfo(for: identifier) { $0.routingInfo = storedRinfo }
                 if $0.date == nil && $0.clientTime == nil { $0.date = Date() }
+                if customHeaders?.clientInfo == nil { $0.clientInfo = self.clientInfo }
+                if customHeaders?.userAgent == nil { $0.userAgent = self.userAgent }
             }
 
         return (AnisetteHeadersDTO.toDictionary(from: headers), generatedBlob)
@@ -225,7 +234,7 @@ extension AnisetteClient {
         provider: any AnisetteDataProvider
     ) async throws -> Data {
         verboseLog("[AnisetteKit] Fetching provisioning URLs from Apple lookup...")
-        let lookupURL = URL(string: AnisetteConstants.URLs.grandSlamLookup)!
+        let lookupURL = self.lookupURL
         let lookupReq = createRequest(url: lookupURL, identifier: identifier, httpMethod: "GET", routingInfo: nil as String?, headers: customHeaders)
 
         let (lookupData, lookupResp) = try await sendRequest(lookupReq, step: "Lookup", endpointName: "Apple lookup")
@@ -329,6 +338,8 @@ extension AnisetteClient {
                 if $0.deviceID == nil { $0.deviceID = identifier.uuidString.uppercased() }
                 if let routingInfo { $0.routingInfo = routingInfo }
                 if $0.date == nil && $0.clientTime == nil { $0.date = Date() }
+                if customHeaders?.clientInfo == nil { $0.clientInfo = self.clientInfo }
+                if customHeaders?.userAgent == nil { $0.userAgent = self.userAgent }
             }
 
         let dict = AnisetteHeadersDTO.toDictionary(from: headers)

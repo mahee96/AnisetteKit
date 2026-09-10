@@ -20,7 +20,7 @@ public enum AnisetteConstants {
     public static let iso8601DateFormat     = "yyyy-MM-dd'T'HH:mm:ss'Z'"
 
     public enum URLs {
-        public static let grandSlamLookup = "https://gsa.apple.com/grandslam/GsService2/lookup"
+        public static let grandSlamLookup = URL(string: "https://gsa.apple.com/grandslam/GsService2/lookup")!
     }
 
     public enum Headers {
